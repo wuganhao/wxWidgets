@@ -32,8 +32,8 @@ jobs:
     
     - name: Build
       run: |
-        cmake -DwxBUILD_SHARED=ON  -DwxUSE_STL=ON -DwxUSE_GUI=1 -DwxBUILD_PRECOMP=1 -DwxUSE_UNICODE=ON -DwxBUILD_MONOLITHIC=ON -DwxBUILD_VENDOR= -DwxBUILD_CXX_STANDARD=17 -A Win32 -B build32
-        cmake -DwxBUILD_SHARED=ON  -DwxUSE_STL=ON -DwxUSE_GUI=1 -DwxBUILD_PRECOMP=1 -DwxUSE_UNICODE=ON -DwxBUILD_MONOLITHIC=ON -DwxBUILD_VENDOR= -DwxBUILD_CXX_STANDARD=17 -A x64   -B build64
+        cmake -DwxBUILD_SHARED=ON  -DwxUSE_STL=ON -DwxUSE_GUI=1 -DwxBUILD_PRECOMP=ON -DwxUSE_UNICODE=ON -DwxBUILD_MONOLITHIC=ON -DwxBUILD_VENDOR= -DwxBUILD_CXX_STANDARD=17 -A Win32 -B build32
+        cmake -DwxBUILD_SHARED=ON  -DwxUSE_STL=ON -DwxUSE_GUI=1 -DwxBUILD_PRECOMP=ON -DwxUSE_UNICODE=ON -DwxBUILD_MONOLITHIC=ON -DwxBUILD_VENDOR= -DwxBUILD_CXX_STANDARD=17 -A x64   -B build64
         cmake --build build32 --config Debug
         cmake --build build32 --config Release
         cmake --build build64 --config Debug
