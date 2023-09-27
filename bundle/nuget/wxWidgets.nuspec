@@ -15,23 +15,23 @@
         </dependencies>
     </metadata>
     <files>
-        <file src="build64\lib\vc_x64_dll\wxmsw316u_vc.dll"         target="lib\native\x64\release\" />
-        <file src="build64\lib\vc_x64_dll\wxmsw31u.lib"             target="lib\native\x64\release\" />
-        <file src="build64\lib\vc_x64_dll\wxmsw31u.exp"             target="lib\native\x64\release\" />
+        <file src="build64\lib\vc_x64_dll\wxmsw*u_vc.dll"         target="lib\native\x64\release\" />
+        <file src="build64\lib\vc_x64_dll\wxmsw*u.lib"             target="lib\native\x64\release\" />
+        <file src="build64\lib\vc_x64_dll\wxmsw*u.exp"             target="lib\native\x64\release\" />
         <file src="build64\lib\vc_x64_dll\mswu\**\*.h"              target="lib\native\x64\release\" />
-        <file src="build64\lib\vc_x64_dll\wxmsw316ud_vc.dll"        target="lib\native\x64\debug\" />
-        <file src="build64\lib\vc_x64_dll\wxmsw31ud.lib"            target="lib\native\x64\debug\" />
-        <file src="build64\lib\vc_x64_dll\wxmsw31ud.exp"            target="lib\native\x64\debug\" />
-        <file src="build64\lib\vc_x64_dll\wxmsw316ud_vc.pdb"        target="lib\native\x64\debug\" />
+        <file src="build64\lib\vc_x64_dll\wxmsw*ud_vc.dll"        target="lib\native\x64\debug\" />
+        <file src="build64\lib\vc_x64_dll\wxmsw*ud.lib"            target="lib\native\x64\debug\" />
+        <file src="build64\lib\vc_x64_dll\wxmsw*ud.exp"            target="lib\native\x64\debug\" />
+        <file src="build64\lib\vc_x64_dll\wxmsw*ud_vc.pdb"        target="lib\native\x64\debug\" />
         <file src="build64\lib\vc_x64_dll\mswud\**\*.h"             target="lib\native\x64\debug\" />
-		<file src="build32\lib\vc_dll\wxmsw316u_vc.dll"             target="lib\native\x86\release\" />
-        <file src="build32\lib\vc_dll\wxmsw31u.lib"                 target="lib\native\x86\release\" />
-        <file src="build32\lib\vc_dll\wxmsw31u.exp"                 target="lib\native\x86\release\" />
+		<file src="build32\lib\vc_dll\wxmsw*u_vc.dll"             target="lib\native\x86\release\" />
+        <file src="build32\lib\vc_dll\wxmsw*u.lib"                 target="lib\native\x86\release\" />
+        <file src="build32\lib\vc_dll\wxmsw*u.exp"                 target="lib\native\x86\release\" />
         <file src="build32\lib\vc_dll\mswu\**\*.h"                  target="lib\native\x86\release\" />
-        <file src="build32\lib\vc_dll\wxmsw316ud_vc.dll"            target="lib\native\x86\debug\" />
-        <file src="build32\lib\vc_dll\wxmsw31ud.lib"                target="lib\native\x86\debug\" />
-        <file src="build32\lib\vc_dll\wxmsw31ud.exp"                target="lib\native\x86\debug\" />
-        <file src="build32\lib\vc_dll\wxmsw316ud_vc.pdb"            target="lib\native\x86\debug\" />
+        <file src="build32\lib\vc_dll\wxmsw*ud_vc.dll"            target="lib\native\x86\debug\" />
+        <file src="build32\lib\vc_dll\wxmsw*ud.lib"                target="lib\native\x86\debug\" />
+        <file src="build32\lib\vc_dll\wxmsw*ud.exp"                target="lib\native\x86\debug\" />
+        <file src="build32\lib\vc_dll\wxmsw*ud_vc.pdb"            target="lib\native\x86\debug\" />
         <file src="build32\lib\vc_dll\mswud\**\*.h"                 target="lib\native\x86\debug\" />
         <file src="static\lib\vc_x64_lib\wxrc.exe"                  target="tools\" />
         <file src="include\**\*.h" target="include\" />
