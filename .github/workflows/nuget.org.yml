@@ -29,7 +29,6 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: x64
-        toolset: 17.0
 
     - name: Show Tools
       run: |
