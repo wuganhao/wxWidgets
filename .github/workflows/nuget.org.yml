@@ -2,6 +2,9 @@ name: Push Build
 
 on:
   push:
+    branches:
+      - master
+      - release/*
 
 jobs:
   build:
@@ -24,7 +27,7 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: x64
-        toolset: 16.0
+        toolset: 17.0
 
     - name: Show Tools
       run: |
