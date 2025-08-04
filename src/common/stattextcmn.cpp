@@ -67,7 +67,6 @@ wxFLAGS_MEMBER(wxBORDER)
 // standard window styles
 wxFLAGS_MEMBER(wxTAB_TRAVERSAL)
 wxFLAGS_MEMBER(wxCLIP_CHILDREN)
-wxFLAGS_MEMBER(wxTRANSPARENT_WINDOW)
 wxFLAGS_MEMBER(wxWANTS_CHARS)
 wxFLAGS_MEMBER(wxFULL_REPAINT_ON_RESIZE)
 wxFLAGS_MEMBER(wxALWAYS_SHOW_SB )
@@ -100,25 +99,18 @@ wxCONSTRUCTOR_6( wxStaticText, wxWindow*, Parent, wxWindowID, Id, \
 // wxTextWrapper
 // ----------------------------------------------------------------------------
 
-struct wxTextWrapperWidthComparator
-{
-    bool operator()(int w1, int w2) const { return w1 <= w2; }
-};
-
 void wxTextWrapper::Wrap(wxWindow *win, const wxString& text, int widthMax)
 {
-    const wxClientDC dc(win);
+    const wxInfoDC dc(win);
 
-    const wxArrayString ls = wxSplit(text, '\n', '\0');
-    for ( wxArrayString::const_iterator i = ls.begin(); i != ls.end(); ++i )
+    bool hadFirst = false;
+    for ( auto line : wxSplit(text, '\n', '\0') )
     {
-        wxString line = *i;
-
-        if ( i != ls.begin() )
-        {
-            // Do this even if the line is empty, except if it's the first one.
+        // Call OnNewLine() for every new line in any case.
+        if ( !hadFirst )
+            hadFirst = true;
+        else
             OnNewLine();
-        }
 
         // Is this a special case when wrapping is disabled?
         if ( widthMax < 0 )
@@ -140,7 +132,7 @@ void wxTextWrapper::Wrap(wxWindow *win, const wxString& text, int widthMax)
                    widths.begin(),
                    widths.end(),
                    widthMax,
-                   wxTextWrapperWidthComparator()
+                   [](int w1, int w2) { return w1 <= w2; }
                 ) - widths.begin();
 
             // Does the entire remaining line fit?
@@ -200,12 +192,12 @@ public:
     }
 
 protected:
-    virtual void OnOutputLine(const wxString& line) wxOVERRIDE
+    virtual void OnOutputLine(const wxString& line) override
     {
         m_text += line;
     }
 
-    virtual void OnNewLine() wxOVERRIDE
+    virtual void OnNewLine() override
     {
         m_text += wxT('\n');
     }
@@ -290,7 +282,7 @@ wxString wxStaticTextBase::Ellipsize(const wxString& label) const
         return label;
     }
 
-    wxClientDC dc(const_cast<wxStaticTextBase*>(this));
+    wxInfoDC dc(const_cast<wxStaticTextBase*>(this));
 
     wxEllipsizeMode mode;
     if ( HasFlag(wxST_ELLIPSIZE_START) )

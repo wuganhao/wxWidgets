@@ -130,7 +130,6 @@ TEST_OBJECTS1=test_ipc.obj,\
 	test_ftp.obj,\
 	test_uris.obj,\
 	test_url.obj,\
-	test_vectors.obj,\
 	test_evtconnection.obj,\
 	test_weakref.obj,\
 	test_xlocale.obj,\
@@ -480,9 +479,6 @@ test_uris.obj : [.uris]uris.cpp
 test_url.obj : [.uris]url.cpp 
 	$(CXXC) /object=[]$@ $(TEST_CXXFLAGS) [.uris]url.cpp
 
-test_vectors.obj : [.vectors]vectors.cpp 
-	$(CXXC) /object=[]$@ $(TEST_CXXFLAGS) [.vectors]vectors.cpp
-
 test_evtconnection.obj : [.weakref]evtconnection.cpp 
 	$(CXXC) /object=[]$@ $(TEST_CXXFLAGS) [.weakref]evtconnection.cpp
 
@@ -495,7 +491,7 @@ test_xlocale.obj : [.xlocale]xlocale.cpp
 test_xmltest.obj : [.xml]xmltest.cpp 
 	$(CXXC) /object=[]$@ $(TEST_CXXFLAGS) [.xml]xmltest.cpp
 
-test_gui_sample_rc.obj : [...]samples]sample.rc 
+test_gui_test_rc.obj : test.rc
 	$(WINDRES) -i$< -o$@    --define __WX$(TOOLKIT)__ $(__WXUNIV_DEFINE_p_5) $(__DEBUG_DEFINE_p_5)  $(__EXCEPTIONS_DEFINE_p_5) $(__RTTI_DEFINE_p_5) $(__THREAD_DEFINE_p_5)   --include-dir $(srcdir) $(__DLLFLAG_p_5) --include-dir [...]samples $(__RCDEFDIR_p_1) --include-dir $(top_srcdir)]include
 
 test_gui_asserthelper.obj : asserthelper.cpp 
@@ -581,6 +577,9 @@ test_gui_itemcontainertest.obj : [.controls]itemcontainertest.cpp
 
 test_gui_label.obj : [.controls]label.cpp 
 	$(CXXC) /object=[]$@ $(TEST_GUI_CXXFLAGS) [.controls]label.cpp
+
+test_gui_infobar.obj : [.controls]infobar.cpp 
+	$(CXXC) /object=[]$@ $(TEST_GUI_CXXFLAGS) [.controls]infobar.cpp
 
 test_gui_listbasetest.obj : [.controls]listbasetest.cpp 
 	$(CXXC) /object=[]$@ $(TEST_GUI_CXXFLAGS) [.controls]listbasetest.cpp

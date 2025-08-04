@@ -255,9 +255,9 @@ int wxSystemSettingsNative::GetMetric(wxSystemMetric index, const wxWindow* WXUN
         // TODO case wxSYS_EDGE_Y:
 
         case wxSYS_CURSOR_X:
-            return wxRound([[[NSCursor arrowCursor] image] size].width * GetCursorScale());
+            return wxRound(float([[[NSCursor arrowCursor] image] size].width) * GetCursorScale());
         case wxSYS_CURSOR_Y:
-            return wxRound([[[NSCursor arrowCursor] image] size].height * GetCursorScale());
+            return wxRound(float([[[NSCursor arrowCursor] image] size].height) * GetCursorScale());
 
         case wxSYS_HSCROLL_ARROW_X:
             return 16;
@@ -274,11 +274,11 @@ int wxSystemSettingsNative::GetMetric(wxSystemMetric index, const wxWindow* WXUN
         // TODO case wxSYS_WINDOWMIN_Y:
 
         case wxSYS_SCREEN_X:
-            wxDisplaySize(&value, NULL);
+            wxDisplaySize(&value, nullptr);
             return value;
 
         case wxSYS_SCREEN_Y:
-            wxDisplaySize(NULL, &value);
+            wxDisplaySize(nullptr, &value);
             return value;
 
         // TODO case wxSYS_FRAMESIZE_X:
@@ -341,9 +341,9 @@ int wxSystemSettingsNative::GetMetric(wxSystemMetric index, const wxWindow* WXUN
              return -1;
 
         default:
-            return -1;  // unsupported metric
+            break;
     }
-    return 0;
+    return -1;  // unsupported metric
 }
 
 bool wxSystemSettingsNative::HasFeature(wxSystemFeature index)

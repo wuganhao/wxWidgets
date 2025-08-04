@@ -250,8 +250,9 @@ public:
         (https://github.com/memononen/nanosvg) for parsing and rasterizing SVG
         images which imposes the following limitations:
 
-        - Text elements are not supported at all.
+        - Text elements are not supported at all (see note for workaround).
         - SVG 1.1 filters are not supported.
+        - Embedded images are not supported (see note for workaround).
 
         These limitations will be relaxed in the future wxWidgets versions.
 
@@ -273,6 +274,16 @@ public:
         @param sizeDef The default size to return from GetDefaultSize() for
             this bundle. As SVG images usually don't have any natural
             default size, it should be provided when creating the bundle.
+
+        @note Converting text objects to path objects will allow them to be
+            rasterized as expected. This can be done in an SVG editor such as
+            Inkscape. (In Inkscape, select a text object and choose
+            "Object to Path" from the "Path" menu.)\n
+            Converting embedded images to paths from an SVG editor will
+            allow them to be rasterized. For example, selecting "Trace Bitmap"
+            from the "Path" menu in Inkscape can perform this. This is only
+            recommended for simple images, however, as more complex images
+            may not rasterize well.
      */
     static wxBitmapBundle FromSVG(char* data, const wxSize& sizeDef);
 
@@ -454,12 +465,12 @@ public:
             {
             }
 
-            wxSize GetDefaultSize() const wxOVERRIDE
+            wxSize GetDefaultSize() const override
             {
                 ... determine the minimum/default size for bitmap to use ...
             }
 
-            wxSize GetPreferredBitmapSizeAtScale(double scale) const wxOVERRIDE
+            wxSize GetPreferredBitmapSizeAtScale(double scale) const override
             {
                 // If it's ok to scale the bitmap, just use the standard size
                 // at the given scale:
@@ -470,7 +481,7 @@ public:
                     possibly by letting DoGetPreferredSize() choose it ...
             }
 
-            wxBitmap GetBitmap(const wxSize& size) wxOVERRIDE
+            wxBitmap GetBitmap(const wxSize& size) override
             {
                 ... get the bitmap of the requested size from somewhere and
                     cache it if necessary, i.e. if getting it is expensive ...
@@ -541,12 +552,12 @@ protected:
                 return wxSize(32, 32);
             }
 
-            wxSize GetPreferredBitmapSizeAtScale(double scale) const wxOVERRIDE
+            wxSize GetPreferredBitmapSizeAtScale(double scale) const override
             {
                 return DoGetPreferredSize(scale);
             }
 
-            wxBitmap GetBitmap(const wxSize& size) wxOVERRIDE
+            wxBitmap GetBitmap(const wxSize& size) override
             {
                 // For consistency with GetNextAvailableScale(), we must have
                 // bitmap variants for 32, 48 and 64px sizes.
@@ -566,7 +577,7 @@ protected:
             }
 
         protected:
-            double GetNextAvailableScale(size_t& i) const wxOVERRIDE
+            double GetNextAvailableScale(size_t& i) const override
             {
                 const double availableScales[] = { 1, 1.5, 2, 0 };
 

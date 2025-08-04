@@ -2,7 +2,6 @@
 // Name:        src/msw/fontdlg.cpp
 // Purpose:     wxFontDialog class
 // Author:      Julian Smart
-// Modified by:
 // Created:     01/02/97
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
@@ -102,7 +101,7 @@ int wxFontDialog::ShowModal()
     WX_HOOK_MODAL_DIALOG();
 
     wxWindow* const parent = GetParentForModalDialog(m_parent, GetWindowStyle());
-    WXHWND hWndParent = parent ? GetHwndOf(parent) : NULL;
+    WXHWND hWndParent = parent ? GetHwndOf(parent) : nullptr;
 
     wxWindowDisabler disableOthers(this, parent);
 
@@ -194,9 +193,9 @@ int wxFontDialog::ShowModal()
         const int fontDPI = wxGetDPIofHDC(ScreenHDC()).y;
         logFont.lfHeight = wxNativeFontInfo::GetLogFontHeightAtPPI(wxRound(fPointSize), fontDPI);
 
-        // Use NULL, so the pointSize calculation in wxNativeFontInfo will
+        // Use nullptr, so the pointSize calculation in wxNativeFontInfo will
         // use the same fontDPI as is used above for lfHeight.
-        wxFont f(wxNativeFontInfo(logFont, NULL));
+        wxFont f(wxNativeFontInfo(logFont, nullptr));
 
         // The native dialog allows selecting only integer font sizes in
         // points, but converting them to pixel height loses precision and so

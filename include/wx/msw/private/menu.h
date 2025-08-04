@@ -14,9 +14,9 @@ namespace wxMSWMenuImpl
 {
 
 // Definitions for undocumented messages and structs used in this code.
-const int WM_MENUBAR_DRAWMENU = 0x91;
-const int WM_MENUBAR_DRAWMENUITEM = 0x92;
-const int WM_MENUBAR_MEASUREMENUITEM = 0x94;
+constexpr int WM_MENUBAR_DRAWMENU = 0x91;
+constexpr int WM_MENUBAR_DRAWMENUITEM = 0x92;
+constexpr int WM_MENUBAR_MEASUREMENUITEM = 0x94;
 
 // This is passed via LPARAM of WM_MENUBAR_DRAWMENU.
 struct MenuBarDrawMenu

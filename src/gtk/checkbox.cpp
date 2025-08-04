@@ -73,7 +73,7 @@ static void gtk_checkbox_toggled_callback(GtkWidget *widget, wxCheckBox *cb)
 
 wxCheckBox::wxCheckBox()
 {
-    m_widgetCheckbox = NULL;
+    m_widgetCheckbox = nullptr;
 }
 
 wxCheckBox::~wxCheckBox()
@@ -108,7 +108,7 @@ bool wxCheckBox::Create(wxWindow *parent,
 
         m_widgetLabel = gtk_label_new("");
 #ifdef __WXGTK4__
-        g_object_set(m_widgetLabel, "xalign", 0.0f, NULL);
+        g_object_set(m_widgetLabel, "xalign", 0.0f, nullptr);
 #else
         wxGCC_WARNING_SUPPRESS(deprecated-declarations)
         gtk_misc_set_alignment(GTK_MISC(m_widgetLabel), 0.0, 0.5);
@@ -141,23 +141,15 @@ bool wxCheckBox::Create(wxWindow *parent,
 
     m_parent->DoAddChild( this );
 
-#ifdef __WXGTK3__
-    // CSS added if the window has wxNO_BORDER inside base class PostCreation()
-    // makes checkbox look broken in the default GTK 3 theme, so avoid doing
-    // this by temporarily turning this flag off.
-    if ( style & wxNO_BORDER )
-        ToggleWindowStyle(wxNO_BORDER);
-#endif
-
     PostCreation(size);
 
-#ifdef __WXGTK3__
-    // Turn it back on if necessary.
-    if ( style & wxNO_BORDER )
-        ToggleWindowStyle(wxNO_BORDER);
-#endif
-
     return true;
+}
+
+void wxCheckBox::GTKRemoveBorder()
+{
+    // CSS added if the window has wxBORDER_NONE makes
+    // checkbox look broken in the default GTK 3 theme
 }
 
 void wxCheckBox::GTKDisableEvents()
@@ -174,14 +166,14 @@ void wxCheckBox::GTKEnableEvents()
 
 void wxCheckBox::SetValue( bool state )
 {
-    wxCHECK_RET( m_widgetCheckbox != NULL, wxT("invalid checkbox") );
+    wxCHECK_RET( m_widgetCheckbox != nullptr, wxT("invalid checkbox") );
 
     DoSet3StateValue(state ? wxCHK_CHECKED : wxCHK_UNCHECKED);
 }
 
 bool wxCheckBox::GetValue() const
 {
-    wxCHECK_MSG( m_widgetCheckbox != NULL, false, wxT("invalid checkbox") );
+    wxCHECK_MSG( m_widgetCheckbox != nullptr, false, wxT("invalid checkbox") );
 
     return DoGet3StateValue() != wxCHK_UNCHECKED;
 }
@@ -210,7 +202,7 @@ wxCheckBoxState wxCheckBox::DoGet3StateValue() const
 
 void wxCheckBox::SetLabel( const wxString& label )
 {
-    wxCHECK_RET( m_widgetLabel != NULL, wxT("invalid checkbox") );
+    wxCHECK_RET( m_widgetLabel != nullptr, wxT("invalid checkbox") );
 
     // If we don't hide the empty label, in some themes a focus rectangle is
     // still drawn around it and this looks out of place.

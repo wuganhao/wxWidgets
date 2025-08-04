@@ -16,12 +16,13 @@
 
 #ifndef WX_PRECOMP
     #include "wx/menu.h"
+    #include "wx/utils.h"
 #endif //WX_PRECOMP
 
-#include "wx/utils.h"
-#include "wx/gtk/private.h"
+#include "wx/gtk/private/wrapgtk.h"
 #include "wx/gtk/private/event.h"
 #include "wx/gtk/private/gtk3-compat.h"
+#include "wx/gtk/private/stylecontext.h"
 
 
 #if GTK_CHECK_VERSION(3,6,0)
@@ -147,10 +148,10 @@ wxSearchCtrl::~wxSearchCtrl()
 
 void wxSearchCtrl::Init()
 {
-    m_entry = NULL;
+    m_entry = nullptr;
 
 #if wxUSE_MENUS
-    m_menu = NULL;
+    m_menu = nullptr;
 #endif // wxUSE_MENUS
 
     m_cancelButtonVisible = false;
@@ -176,7 +177,7 @@ bool wxSearchCtrl::Create(wxWindow *parent, wxWindowID id,
 
     if ( HasFlag(wxBORDER_NONE) )
     {
-        g_object_set (m_widget, "has-frame", FALSE, NULL);
+        g_object_set (m_widget, "has-frame", FALSE, nullptr);
     }
 
     GtkEntry * const entry = GetEntry();
@@ -198,9 +199,9 @@ bool wxSearchCtrl::Create(wxWindow *parent, wxWindowID id,
 
     m_focusWidget = GTK_WIDGET(entry);
 
-    PostCreation(size);
+    gtk_entry_set_text(entry, value.utf8_str());
 
-    gtk_entry_set_text(entry, wxGTK_CONV(value));
+    PostCreation(size);
 
     SetHint(_("Search"));
 
@@ -262,7 +263,7 @@ void wxSearchCtrl::SetMenu( wxMenu* menu )
     delete m_menu;
     m_menu = menu;
 
-    const bool hasMenu = m_menu != NULL;
+    const bool hasMenu = m_menu != nullptr;
 
     gtk_entry_set_icon_sensitive(m_entry, GTK_ENTRY_ICON_PRIMARY, hasMenu);
     gtk_entry_set_icon_activatable(m_entry, GTK_ENTRY_ICON_PRIMARY, hasMenu);
@@ -300,7 +301,7 @@ void wxSearchCtrl::ShowCancelButton(bool show)
 
     gtk_entry_set_icon_from_icon_name(m_entry,
                                       GTK_ENTRY_ICON_SECONDARY,
-                                      show ? "edit-clear-symbolic" : NULL);
+                                      show ? "edit-clear-symbolic" : nullptr);
 
     m_cancelButtonVisible = show;
 }
@@ -330,7 +331,7 @@ wxString wxSearchCtrl::GetDescriptiveText() const
 
 void wxSearchCtrl::OnChar(wxKeyEvent& key_event)
 {
-    wxCHECK_RET( m_entry != NULL, "invalid search ctrl" );
+    wxCHECK_RET( m_entry != nullptr, "invalid search ctrl" );
 
     if ( key_event.GetKeyCode() == WXK_RETURN )
     {
@@ -384,4 +385,49 @@ void wxSearchCtrl::PopupSearchMenu()
 
 #endif // wxUSE_MENUS
 
+wxSize wxSearchCtrl::DoGetBestSize() const
+{
+    return DoGetSizeFromTextSize(GetCharWidth() * 8);
+}
+
+wxSize wxSearchCtrl::DoGetSizeFromTextSize(int xlen, int ylen) const
+{
+    wxSize size(GTKGetPreferredSize(m_widget));
+    size.x += xlen;
+    if (size.y < ylen)
+        size.y = ylen;
+
+#ifdef wxHAS_GTK_SEARCH_ENTRY
+    if (HasGtkSearchEntry() &&
+        gtk_entry_get_icon_storage_type(m_entry, GTK_ENTRY_ICON_SECONDARY) == GTK_IMAGE_EMPTY)
+    {
+        // If text is empty, there is no "clear" icon, and GtkEntry preferred size
+        // does not account for it. So add in size of primary icon as a substitute.
+        GdkPixbuf* pixbuf = gtk_entry_get_icon_pixbuf(m_entry, GTK_ENTRY_ICON_PRIMARY);
+        if (pixbuf)
+            size.x += gdk_pixbuf_get_width(pixbuf);
+
+        // Also account for secondary icon margin
+        wxGtkStyleContext sc(GetContentScaleFactor());
+        sc.Add(GTK_TYPE_ENTRY, "entry", "entry", nullptr);
+        sc.Add(GTK_TYPE_IMAGE, "image", "right", nullptr);
+        GtkBorder margin;
+        gtk_style_context_get_margin(sc, GTK_STATE_FLAG_NORMAL, &margin);
+        size.x += margin.left + margin.right;
+    }
+#endif // wxHAS_GTK_SEARCH_ENTRY
+
+    return size;
+}
+
+GdkWindow* wxSearchCtrl::GTKGetWindow(wxArrayGdkWindows& windows) const
+{
+#ifdef __WXGTK3__
+    GTKFindWindow(m_widget, windows);
+    return nullptr;
+#else
+    wxUnusedVar(windows);
+    return gtk_entry_get_text_window(GTK_ENTRY(m_widget));
+#endif
+}
 #endif // wxUSE_SEARCHCTRL

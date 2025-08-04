@@ -48,8 +48,40 @@
 // wxTE_RICH controls - can be used together with or instead of wxTE_RICH
 #define wxTE_RICH2          0x8000
 
+/**
+    File types supported by wxTextCtrl::LoadFile() and wxTextCtrl::SaveFile().
 
-#define wxTEXT_TYPE_ANY     0
+    @since 3.3.0
+*/
+enum wxTextCtrlFileType
+{
+    /**
+        Format determined by file extension when loading/saving the control's
+        content.
+
+        The supported formats depend on the capabilities of the platform's
+        native control.
+    */
+    wxTEXT_TYPE_ANY,
+
+    /**
+        Plain Text Format.
+
+        This format is supported under all platforms.
+
+        @since 3.3.0
+    */
+    wxTEXT_TYPE_PLAIN,
+
+    /**
+        Rich Text Format.
+
+        This format is only supported under macOS and MSW.
+
+        @since 3.3.0
+    */
+    wxTEXT_TYPE_RTF
+};
 
 
 /**
@@ -299,7 +331,7 @@ public:
         attributes from @a style that are the same as those in @a compareWith (if passed).
     */
     bool Apply(const wxTextAttr& style,
-               const wxTextAttr* compareWith = NULL);
+               const wxTextAttr* compareWith = nullptr);
 
     /**
         Copies all defined/valid properties from overlay to current object.
@@ -1097,6 +1129,112 @@ public:
 };
 
 /**
+    Search options for wxTextCtrl::SearchText().
+
+    This is a builder class, where property functions can be
+    called during construction. For example:
+
+    @code
+    wxTextSearchResult result =
+        textctrl->SearchText(wxTextSearch(L"Institutional Research").
+            SearchDirection(wxTextSearch::Direction::Down).
+            MatchCase().
+            MatchWholeWord());
+    @endcode
+
+    @since 3.3.0
+*/
+struct wxTextSearch
+{
+    /**
+       The string to search for.
+     */
+    wxTextSearch(const wxString& text) : m_searchValue(text) {}
+
+    /**
+        One of the following values can be passed to wxTextSearch::SearchDirection() to
+        control direction when searching a wxTextCtrl.
+
+        @since 3.3.0
+    */
+    enum class Direction
+    {
+        Down,
+        Up
+    };
+
+    /**
+       The string to search for.
+     */
+    wxTextSearch& SearchValue(const wxString& value)
+    {
+        m_searchValue = value;
+        return *this;
+    }
+
+    /**
+       Whether the search should match case (i.e., be case sensitive).
+
+       By default, this is @c false; search will be case insensitive.
+     */
+    wxTextSearch& MatchCase(const bool matchCase = true)
+    {
+        m_matchCase = matchCase;
+        return *this;
+    }
+
+    /**
+       Whether the search should match the whole word.
+
+       By default, this is @c false; searching will not match by whole word.
+     */
+    wxTextSearch& MatchWholeWord(const bool matchWholeWord = true)
+    {
+        m_wholeWord = matchWholeWord;
+        return *this;
+    }
+
+    /**
+       Whether the search should go up or down in the text control.
+
+       By default, search will go downward.
+     */
+    wxTextSearch& SearchDirection(const wxTextSearch::Direction direction)
+    {
+        m_direction = direction;
+        return *this;
+    }
+
+    /**
+       Where the search should start from. By default, if searching down,
+       then the search will start at 0. If searching up, then will start
+       at the end of control.
+     */
+    wxTextSearch& Start(const long startPosition)
+    {
+        m_startingPosition = startPosition;
+        return *this;
+    }
+
+    wxString              m_searchValue;
+    long                  m_startingPosition = -1;
+    bool                  m_matchCase = true;
+    bool                  m_wholeWord = false;
+    Direction m_direction = Direction::Down;
+};
+
+/** Result from wxTextCtrl::SearchText(), specifying the range of the found text.
+    Range values will be @c wxNOT_FOUND if a match was not found.
+
+    @since 3.3.0
+*/
+struct wxTextSearchResult
+{
+    long m_start = wxNOT_FOUND;
+    long m_end = wxNOT_FOUND;
+};
+
+/**
     @class wxTextProofOptions
 
     This class provides a convenient means of passing multiple parameters to
@@ -1133,7 +1271,7 @@ class WXDLLIMPEXP_CORE wxTextProofOptions
 
        The returned object enables spelling checks and disables grammar checks.
      */
-    static wxTextProofOptions Default()
+    static wxTextProofOptions Default();
 
     /**
        Create an object disabling all checks.
@@ -1141,12 +1279,12 @@ class WXDLLIMPEXP_CORE wxTextProofOptions
        The returned object can be passed to wxTextCtrl::EnableProofCheck() to
        disable all checks in the text control.
      */
-    static wxTextProofOptions Disable()
+    static wxTextProofOptions Disable();
 
     /**
        Enable / disable spell checking for this control.
      */
-    wxTextProofOptions& SpellCheck(bool enable = true)
+    wxTextProofOptions& SpellCheck(bool enable = true);
 
     /**
        Enable / disable grammar checking for this control.
@@ -1154,7 +1292,13 @@ class WXDLLIMPEXP_CORE wxTextProofOptions
        This option is currently only supported under macOS and is ignored under
        the other platforms.
      */
-    wxTextProofOptions& GrammarCheck(bool enable = true)
+    wxTextProofOptions& GrammarCheck(bool enable = true);
+
+    /**
+       Sets the language for the spell checker (and grammar checker on macOS)
+       from a canonical name (e.g., "fr" or "en").
+     */
+    wxTextProofOptions& Language(const wxString& lang);
 
     /// Return true if spell checking is enabled.
     bool IsSpellCheckEnabled() const;
@@ -1163,7 +1307,7 @@ class WXDLLIMPEXP_CORE wxTextProofOptions
     bool IsGrammarCheckEnabled() const;
 
     /// Returns true if any checks are enabled.
-    bool AnyChecksEnabled() const
+    bool AnyChecksEnabled() const;
 };
 
 /**
@@ -1507,8 +1651,9 @@ public:
         Delete the undo history.
 
         Currently only implemented in wxMSW (for controls using wxTE_RICH2
-        style only) and wxOSX (for multiline text controls only), does nothing
-        in the other ports or for the controls not using the appropriate styles.
+        style only), wxOSX and wxQt (for multiline text controls only in both
+        of these ports), does nothing in the other ports or for the controls
+        not using the appropriate styles.
 
         @since 3.1.6
     */
@@ -1617,6 +1762,62 @@ public:
     virtual bool GetStyle(long position, wxTextAttr& style);
 
     /**
+        Returns @c true if text controls support reading and writing RTF (Rich
+        Text Format).
+
+        This function only returns @true in wxOSX (for multiline contrls) and
+        wxMSW (for rich controls), which are the only ports implementing
+        RTF support in wxTextCtrl.
+
+        @since 3.3.0
+
+        @see GetRTFValue(), SetRTFValue()
+    */
+    bool IsRTFSupported();
+
+    /**
+        Returns the content of a multiline text control as RTF (Rich Text
+        Formatted) text.
+
+        Don't call this function unless IsRTFSupported() returns @true, as it
+        asserts if called in this case (and returns an empty string).
+
+        @since 3.3.0
+
+        @see SetRTFValue()
+    */
+    wxString GetRTFValue() const;
+
+    /**
+        Sets the content of a multiline text control from an RTF (Rich Text
+        Formatted) buffer.
+
+        This offers more granular control of content formatting, as well as a
+        significant performance benefit with larger content. This also provides
+        the ability to read an RTF file and move it directly into the control.
+
+        Don't call this function unless IsRTFSupported() returns @true, as it
+        asserts if called in this case.
+
+        @since 3.3.0
+
+        @see @ref page_samples_text for a usage example.
+
+        @see GetRTFValue()
+    */
+    void SetRTFValue(const wxString& val);
+
+    /**
+        Searches for a string in the control, using the provided search options.
+
+        The range of the match will be returned as a wxTextSearchResult, which will
+        contain -1 values if no match was found.
+
+        @since 3.3.0
+    */
+    wxTextSearchResult SearchText(const wxTextSearch& search) const;
+
+    /**
         Finds the position of the character at the specified point.
 
         If the return code is not @c wxTE_HT_UNKNOWN the position of the
@@ -1716,7 +1917,10 @@ public:
         @param filename
             The filename of the file to load.
         @param fileType
-            The type of file to load. This is currently ignored in wxTextCtrl.
+            One of the values of wxTextCtrlFileType enum, specifying the type
+            of file to load.
+            Default value and plain text are supported on all platforms, while
+            ::wxTEXT_TYPE_RTF is only supported in wxOSX currently.
 
         @return
             @true if successful, @false otherwise.
@@ -1795,7 +1999,10 @@ public:
         @param filename
             The name of the file in which to save the text.
         @param fileType
-            The type of file to save. This is currently ignored in wxTextCtrl.
+            One of the values of wxTextCtrlFileType enum, specifying the type
+            of file to save as.
+            Default value and plain text are supported on all platforms, while
+            ::wxTEXT_TYPE_RTF is only supported in wxOSX currently.
 
         @return
             @true if the operation was successful, @false otherwise.
@@ -1938,6 +2145,61 @@ public:
 
     ///@}
 
+    /**
+        @name Gtk-specific functions
+    */
+    ///@{
+
+    /**
+        Gets the underlying text buffer for multi-line controls.
+
+        This function returns the underlying GTK object for multiline text
+        controls, i.e. those with wxTE_MULTILINE style, and @NULL for single
+        line text controls.
+
+        Having direct access to the `GtkTextBuffer` allows to use GTK API
+        directly if necessary, but beware that doing it may interfere with the
+        normal wxTextCtrl operation.
+
+        @onlyfor{wxgtk}
+
+        @since 3.3
+    */
+    GtkTextBuffer *GTKGetTextBuffer();
+
+    /**
+        Gets the underlying text control that can be used with GTK’s API.
+
+        This function can only be called for single-line text controls, i.e.
+        those without wxTE_MULTILINE style.
+
+        @onlyfor{wxgtk}
+
+        @since 3.3
+    */
+    GtkEditable *GTKGetEditable();
+
+    /**
+        Sets the content of a multiline text control from a Pango markup buffer.
+
+        This offers more granular control of content formatting, as well as a
+        significant performance benefit with larger content.
+
+        This is the GTK equivalent of SetRTFValue().
+
+        This functionality is only available in GTK versions greater than 3.16,
+        the function does nothing and returns @false when using older GTK
+        version, the application should handle this case and fall back to some
+        other way of setting the control contents.
+
+        @onlyfor{wxgtk}
+
+        @since 3.3
+    */
+    bool GTKSetPangoMarkup(const wxString& str);
+
+    ///@}
+
     ///@{
     /**
         Operator definitions for appending to a text control.
@@ -1997,12 +2259,8 @@ public:
     ostream object to a wxTextCtrl instead.
 
     @note
-        Some compilers and/or build configurations don't support multiply
-        inheriting wxTextCtrl from @c std::streambuf in which case this class is
-        not compiled in.
-        You also must have @c wxUSE_STD_IOSTREAM option on (i.e. set to 1) in your
-        @c setup.h to be able to use it. Under Unix, specify @c \--enable-std_iostreams
-        switch when running configure for this.
+        This class is not available if `wxUSE_STD_IOSTREAM` is set to 0 (which
+        is done by `--disable-std_iostreams` option when using configure).
 
     Example of usage:
 
@@ -2032,7 +2290,7 @@ public:
         the default parameter value to the text control @a text.
 
         @param text
-            The text control to append output too, must be non-@NULL
+            The text control to append output too, must be non-null
         @param ostr
             The C++ stream to redirect, cout is used if it is @NULL
     */
@@ -2045,4 +2303,3 @@ public:
     */
     ~wxStreamToTextRedirector();
 };
-

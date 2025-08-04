@@ -14,11 +14,17 @@ include(CMakePrintHelpers)
 
 # Use the MSVC/makefile naming convention, or the configure naming convention,
 # this is the same check as used in FindwxWidgets.
-if(WIN32 AND NOT CYGWIN AND NOT MSYS)
+if(WIN32 AND NOT CYGWIN AND NOT MSYS AND NOT CMAKE_CROSSCOMPILING)
     set(WIN32_MSVC_NAMING 1)
 else()
     set(WIN32_MSVC_NAMING 0)
 endif()
+
+
+# List of libraries added via wx_add_library() to use for wx-config
+# and headers added via wx_append_sources() to use for install.
+set(wxLIB_TARGETS)
+set(wxINSTALL_HEADERS)
 
 
 # List of libraries added via wx_add_library() to use for wx-config
@@ -130,8 +136,8 @@ function(wx_set_common_target_properties target_name)
             C_VISIBILITY_PRESET hidden
             CXX_VISIBILITY_PRESET hidden
             VISIBILITY_INLINES_HIDDEN TRUE
-        )
-    endif()
+            )
+        endif()
 
     if(MSVC)
         if(wxCOMMON_TARGET_PROPS_DEFAULT_WARNINGS)
@@ -160,8 +166,8 @@ function(wx_set_common_target_properties target_name)
             -Woverloaded-virtual
         )
 
-        if(WXOSX_COCOA OR WXGTK3)
-            # when building using GTK+ 3 or Cocoa we currently get tons of deprecation
+        if(WXOSX_COCOA)
+            # when building using Cocoa we currently get tons of deprecation
             # warnings from the standard headers -- disable them as we already know
             # that they're deprecated but we still have to use them to support older
             # toolkit versions and leaving this warning enabled prevents seeing any
@@ -185,10 +191,14 @@ function(wx_set_common_target_properties target_name)
             )
         endif()
 
-        target_compile_options(${target_name} PRIVATE
-            ${common_gcc_clang_compile_options}
+        # Using $<COMPILE_LANGUAGE:CXX> breaks cotire:
+        # Evaluation file to be written multiple times with different content.
+        if(NOT USE_COTIRE)
+            target_compile_options(${target_name} PRIVATE
+                ${common_gcc_clang_compile_options}
             $<$<COMPILE_LANGUAGE:CXX>:${common_gcc_clang_cpp_compile_options}>
         )
+        endif()
     endif()
 
     if(wxUSE_NO_RTTI)
@@ -239,9 +249,7 @@ function(wx_set_target_properties target_name)
     endif()
 
     set(lib_unicode)
-    if(wxUSE_UNICODE)
-        set(lib_unicode "u")
-    endif()
+    set(lib_unicode "u")
 
     set(lib_rls)
     set(lib_dbg)
@@ -342,13 +350,6 @@ function(wx_set_target_properties target_name)
         target_compile_definitions(${target_name} PRIVATE wxUSE_GUI=1 wxUSE_BASE=0)
     endif()
 
-    if(wxUSE_UNICODE)
-        if(WIN32)
-            target_compile_definitions(${target_name} PUBLIC UNICODE)
-        endif()
-        target_compile_definitions(${target_name} PUBLIC _UNICODE)
-    endif()
-
     if(WIN32 AND MSVC)
         # Suppress deprecation warnings for standard library calls
         target_compile_definitions(${target_name} PRIVATE
@@ -358,6 +359,11 @@ function(wx_set_target_properties target_name)
             _WINSOCK_DEPRECATED_NO_WARNINGS=1
             )
     endif()
+
+    if(WIN32)
+        target_compile_definitions(${target_name} PUBLIC UNICODE)
+    endif()
+    target_compile_definitions(${target_name} PUBLIC _UNICODE)
 
     file(RELATIVE_PATH wxSETUP_HEADER_REL ${wxOUTPUT_DIR} ${wxSETUP_HEADER_PATH})
     target_include_directories(${target_name}
@@ -379,6 +385,8 @@ function(wx_set_target_properties target_name)
             kernel32
             user32
             gdi32
+            gdiplus
+            msimg32
             comdlg32
             winspool
             winmm
@@ -540,6 +548,21 @@ macro(wx_lib_link_libraries name)
     endif()
 endmacro()
 
+# wx_lib_link_directories(name [])
+# Forwards everything to target_link_directories() except for monolithic
+# build where it collects all directories for linking with the mono lib
+macro(wx_lib_link_directories name)
+    if(wxBUILD_MONOLITHIC)
+        cmake_parse_arguments(_DIR_LINK "" "" "PUBLIC;PRIVATE" ${ARGN})
+        list(APPEND wxMONO_DIRS_PUBLIC ${_DIR_LINK_PUBLIC})
+        list(APPEND wxMONO_DIRS_PRIVATE ${_DIR_LINK_PRIVATE})
+        set(wxMONO_DIRS_PUBLIC ${wxMONO_DIRS_PUBLIC} PARENT_SCOPE)
+        set(wxMONO_DIRS_PRIVATE ${wxMONO_DIRS_PRIVATE} PARENT_SCOPE)
+    else()
+        target_link_directories(${name};${ARGN})
+    endif()
+endmacro()
+
 # wx_exe_link_libraries(target libs...)
 # Link wx libraries to executable
 macro(wx_exe_link_libraries name)
@@ -591,7 +614,7 @@ endmacro()
 # Set common properties for a builtin third party library
 function(wx_set_builtin_target_properties target_name)
     set(lib_unicode)
-    if(wxUSE_UNICODE AND target_name STREQUAL "wxregex")
+    if(target_name STREQUAL "wxregex")
         set(lib_unicode "u")
     endif()
 
@@ -613,13 +636,6 @@ function(wx_set_builtin_target_properties target_name)
         OUTPUT_NAME_DEBUG "${target_name}${lib_unicode}${lib_dbg}${lib_flavour}${lib_version}"
     )
 
-    if(wxUSE_UNICODE)
-        if(WIN32)
-            target_compile_definitions(${target_name} PUBLIC UNICODE)
-        endif()
-        target_compile_definitions(${target_name} PUBLIC _UNICODE)
-    endif()
-
     if(MSVC)
         # we're not interested in deprecation warnings about the use of
         # standard C functions in the 3rd party libraries (these warnings
@@ -629,6 +645,12 @@ function(wx_set_builtin_target_properties target_name)
             _CRT_SECURE_NO_DEPRECATE=1
             _SCL_SECURE_NO_WARNINGS=1
         )
+    endif()
+
+    if(WIN32)
+        # not needed for wxWidgets anymore (it is always built with unicode)
+        # but keep it here so applications linking to wxWidgets will inherit it
+        target_compile_definitions(${target_name} PUBLIC UNICODE _UNICODE)
     endif()
 
     target_include_directories(${target_name} BEFORE PRIVATE ${wxSETUP_HEADER_PATH})
@@ -655,6 +677,7 @@ function(wx_add_builtin_library name)
         Make sure you checkout the git submodules.")
     endif()
 
+
     if(${name} MATCHES "wx.*")
         string(SUBSTRING ${name} 2 -1 name_short)
     else()
@@ -675,7 +698,9 @@ set(wxTHIRD_PARTY_LIBRARIES)
 function(wx_add_thirdparty_library var_name lib_name help_str)
     cmake_parse_arguments(THIRDPARTY "" "DEFAULT;DEFAULT_APPLE;DEFAULT_WIN32" "" ${ARGN})
 
-    if(THIRDPARTY_DEFAULT)
+    if(NOT wxUSE_SYS_LIBS)
+        set(thirdparty_lib_default builtin)
+    elseif(THIRDPARTY_DEFAULT)
         set(thirdparty_lib_default ${THIRDPARTY_DEFAULT})
     elseif(THIRDPARTY_DEFAULT_APPLE AND APPLE)
         set(thirdparty_lib_default ${THIRDPARTY_DEFAULT_APPLE})
@@ -745,7 +770,7 @@ endfunction()
 # Add sample, test, demo or benchmark
 # wx_add(<name> <group> [CONSOLE|CONSOLE_GUI|DLL] [IMPORTANT] [SRC_FILES...]
 #    [LIBRARIES ...] [NAME target_name] [FOLDER folder]
-#    [DATA ...] [DEFINITIONS ...] [RES ...] [PLIST ...)
+#    [DATA ...] [DEFINITIONS ...] [RES ...] [RES_BUNDLE ...] [PLIST ...)
 # name default target name
 # group can be Samples, Tests, Demos or Benchmarks
 # first parameter may be CONSOLE to indicate a console application or DLL to indicate a shared library
@@ -760,6 +785,7 @@ endfunction()
 #   DATA followed by required data files. Use a colon to separate different source and dest paths
 #   DEFINITIONS list of definitions for the target
 #   RES followed by WIN32 .rc files
+#   RES_BUNDLE followed by macOS bundle resource files
 #   PLIST followed by macOS Info.plist.in file
 #
 # Additionally the following variables may be set before calling wx_add_sample:
@@ -786,7 +812,7 @@ function(wx_add name group)
     cmake_parse_arguments(APP
         "CONSOLE;CONSOLE_GUI;DLL;IMPORTANT"
         "NAME;FOLDER"
-        "DATA;DEFINITIONS;DEPENDS;LIBRARIES;RES;PLIST"
+        "DATA;DEFINITIONS;DEPENDS;LIBRARIES;RES;RES_BUNDLE;PLIST"
         ${ARGN}
         )
 
@@ -807,7 +833,7 @@ function(wx_add name group)
             return()
         endif()
         set(SUB_DIR "tests")
-        set(DEFAULT_RC_FILE "samples/sample.rc")
+        set(DEFAULT_RC_FILE "tests/test.rc")
     elseif(group STREQUAL Demos)
         set(SUB_DIR "demos/${name}")
         set(DEFAULT_RC_FILE "demos/${name}/${target_name}.rc")
@@ -849,7 +875,13 @@ function(wx_add name group)
             list(APPEND src_files ${wxSOURCE_DIR}/${DEFAULT_RC_FILE})
         endif()
     elseif(APPLE AND NOT IPHONE)
-        list(APPEND src_files ${wxSOURCE_DIR}/src/osx/carbon/wxmac.icns)
+        set(bundle_files "${wxSOURCE_DIR}/src/osx/carbon/wxmac.icns")
+        if(APP_RES_BUNDLE)
+            foreach(res ${APP_RES_BUNDLE})
+                list(APPEND bundle_files "${wxSOURCE_DIR}/${SUB_DIR}/${res}")
+            endforeach()
+        endif()
+        list(APPEND src_files ${bundle_files})
     endif()
 
     if(APP_DLL)
@@ -899,12 +931,12 @@ function(wx_add name group)
         target_include_directories(${target_name} PRIVATE ${wxSOURCE_DIR}/samples)
     elseif(group STREQUAL Tests)
         target_include_directories(${target_name} PRIVATE ${wxSOURCE_DIR}/tests)
-        target_include_directories(${target_name} PRIVATE ${wxSOURCE_DIR}/3rdparty/catch/include)
+        target_include_directories(${target_name} PRIVATE ${wxSOURCE_DIR}/samples)
+        target_include_directories(${target_name} PRIVATE ${wxSOURCE_DIR}/3rdparty/catch/single_include)
         target_include_directories(${target_name} PRIVATE ${wxTOOLKIT_INCLUDE_DIRS})
     endif()
 
     if(APP_DATA)
-        # TODO: handle data files differently for OS X bundles
         # Copy data files to output directory
         foreach(data_src ${APP_DATA})
             string(FIND ${data_src} ":" HAS_COLON)
@@ -933,7 +965,7 @@ function(wx_add name group)
             endif()
             set_target_properties(${target_name} PROPERTIES
                 MACOSX_BUNDLE_INFO_PLIST "${PLIST_FILE}"
-                RESOURCE "${wxSOURCE_DIR}/src/osx/carbon/wxmac.icns")
+                RESOURCE "${bundle_files}")
         endif()
         set_target_properties(${target_name} PROPERTIES
             MACOSX_BUNDLE_GUI_IDENTIFIER "org.wxwidgets.${target_name}"

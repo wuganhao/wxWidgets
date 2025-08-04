@@ -19,10 +19,12 @@
 
 #include "wx/checkbox.h"
 #include "wx/control.h"
-#include "wx/scopedptr.h"
 #include "wx/stattext.h"
+#include "wx/textctrl.h"
 
 #include "wx/generic/stattextg.h"
+
+#include <memory>
 
 namespace
 {
@@ -90,14 +92,14 @@ TEST_CASE("wxControl::Label", "[wxControl][label]")
 {
     SECTION("wxStaticText")
     {
-        const wxScopedPtr<wxStaticText>
+        const std::unique_ptr<wxStaticText>
             st(new wxStaticText(wxTheApp->GetTopWindow(), wxID_ANY, ORIGINAL_LABEL));
         DoTestLabel(st.get());
     }
 
     SECTION("wxStaticText/ellipsized")
     {
-        const wxScopedPtr<wxStaticText>
+        const std::unique_ptr<wxStaticText>
             st(new wxStaticText(wxTheApp->GetTopWindow(), wxID_ANY, ORIGINAL_LABEL,
                                 wxDefaultPosition, wxDefaultSize,
                                 wxST_ELLIPSIZE_START));
@@ -106,16 +108,27 @@ TEST_CASE("wxControl::Label", "[wxControl][label]")
 
     SECTION("wxGenericStaticText")
     {
-        const wxScopedPtr<wxGenericStaticText>
+        const std::unique_ptr<wxGenericStaticText>
             gst(new wxGenericStaticText(wxTheApp->GetTopWindow(), wxID_ANY, ORIGINAL_LABEL));
         DoTestLabel(gst.get());
     }
 
     SECTION("wxCheckBox")
     {
-        const wxScopedPtr<wxCheckBox>
+        const std::unique_ptr<wxCheckBox>
             cb(new wxCheckBox(wxTheApp->GetTopWindow(), wxID_ANY, ORIGINAL_LABEL));
         DoTestLabel(cb.get());
+    }
+
+    SECTION("wxTextCtrl")
+    {
+        const std::unique_ptr<wxTextCtrl>
+            tc(new wxTextCtrl(wxTheApp->GetTopWindow(), wxID_ANY, ORIGINAL_LABEL));
+
+        // Setting the label of a wxTextCtrl should _not_ work, it has value
+        // and not a label.
+        WX_ASSERT_FAILS_WITH_ASSERT( tc->SetLabel("something else") );
+        CHECK( tc->GetValue() == ORIGINAL_LABEL );
     }
 }
 

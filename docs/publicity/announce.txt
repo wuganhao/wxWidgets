@@ -1,50 +1,40 @@
-April 24, 2025 -- The wxWidgets team is pleased to announce a new
-stable release of our open source framework for the development of native
+June 6, 2025 -- The wxWidgets team is pleased to announce the first new
+development release of our open source framework for the development of native
 cross-platform applications in C++.
 
-wxWidgets 3.2.8 is part of the API and ABI-stable 3.2.x release series and is
-now available from
+wxWidgets 3.3.0 is the first release in the new 3.3.x development series and is
+available now from
 
     https://www.wxwidgets.org/downloads/
 
-and
+Compared to the stable 3.0.x series, this version brings too many
+improvements and even more bug fixes to list all of them here, please
+see the change log
 
-    https://github.com/wxWidgets/wxWidgets/releases/v3.2.8
+https://raw.githubusercontent.com/wxWidgets/wxWidgets/v3.3.0/docs/changes.txt
+
+for the list of the most important ones and here is the maximally condensed
+summary of the major changes compared to 3.2:
+
+- Support for dark mode in wxMSW under Windows 10 and later.
+- New Chrome-based wxWebView backend and many other wxWebView improvements.
+- Many improvements to wxAUI, including support for pinned and multiline tabs.
+- Support for WebP format in wxImage.
+- Support for high DPI cursors and animations.
+- Latest versions of 3rd party libraries.
+- Support for latest compilers (gcc 15, clang 19/Xcode 16) and C++ standards.
 
 
-This is mostly a bug fix release correcting several problems found in the
-previous 3.2.7 release:
+This release is the start of a new "development" release series, but these
+development releases are suitable for production use: the only difference
+between them and "stable" releases is that neither ABI nor API stability is
+guaranteed in 3.3.x. However we strive to minimize API-incompatible changes
+even so and, in spite of a huge number of changes in it, this release remains
+almost fully API-compatible with wxWidgets 3.2 and updating the existing
+applications to use it should be straightforward. However please make sure to
+read the "INCOMPATIBLE CHANGES" section in the change log to be aware of the
+breaking changes in it.
 
-- Fix crash in wxPropertyGrid with wxGTK3 after recent change (#25286).
-- Fix padding of wxMenu in high DPI under Windows 11 (#25117).
-- Fix key codes in WXK_NUMPADx events in wxGTK (#25263).
-- Fix ABI breakage for versioned symbols in 3.2.7 (#25327).
-- Fix third party libraries build with Xcode 16.3.
-- Fix using OpenGL and WebView when using CMake install (#25266).
-
-But it still contains a couple of enhancements, including:
-
-- Add wxVector(std::initializer_list<U> list) ctor (#25290).
-- Add mouse scrolling support to generic wxSpinCtrl (#24935).
-- Add @USER@ macro to HTML and RichText printers (#25318).
-
-Other changes include:
-
-- Call OnExceptionInMainLoop() in wxGTK if idle event handler throws (#25312).
-- Compute wxStaticText best size ourselves if GTK does it wrongly (#24781).
-- Fix page count display in wxHtmlPrintout when there is only one page (#25320).
-- Miscellaneous CMake build improvements (#25324).
-- Fix new warnings with gcc 15 (#25338).
-- Update Brazilian Portuguese translations.
-
-Please see the full change log for more details:
-
-https://raw.githubusercontent.com/wxWidgets/wxWidgets/v3.2.8/docs/changes.txt
-
-This release is API and ABI-compatible with the previous 3.2.x, meaning that
-the existing applications don't even need to be rebuilt to profit from all the
-fixes above if they use shared/dynamic libraries. And if they do need to be
-recompiled, this can be done without any changes to the code.
 
 We hope that you will enjoy using the new release!
 

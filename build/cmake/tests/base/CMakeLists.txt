@@ -89,7 +89,6 @@ set(TEST_SRC
     uris/ftp.cpp
     uris/uris.cpp
     uris/url.cpp
-    vectors/vectors.cpp
     weakref/evtconnection.cpp
     weakref/weakref.cpp
     xlocale/xlocale.cpp
@@ -113,6 +112,8 @@ set(TEST_DATA
     intl/fr/internat.po
     intl/ja/internat.mo
     intl/ja/internat.po
+    intl/xart-dothraki/internat.mo
+    intl/xart-dothraki/internat.po
     horse.bmp
     horse.png
     horse.xpm

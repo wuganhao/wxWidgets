@@ -41,7 +41,7 @@
     text in the edit part of the spin control directly, the EVT_TEXT is generated,
     like for the wxTextCtrl. When the use enters text into the text area, the text
     is not validated until the control loses focus (e.g. by using the TAB key).
-    The value is then adjusted to the range and a wxSpinEvent sent then if the value
+    The value is then adjusted to the range and a wxSpinEvent is then sent if the value
     is different from the last value sent.
 
     @library{wxcore}
@@ -136,6 +136,10 @@ public:
     /**
         Returns the text in the text entry part of the control.
 
+        @note In wxQt, setting an empty string in the control is exactly the same
+        as calling SetValue(GetMin()). So this function always returns a non-empty
+        string under this platform.
+
         @since 3.1.6
     */
     wxString GetTextValue() const;
@@ -189,6 +193,8 @@ public:
 
         @note Setting a range including negative values is silently ignored
         if current base is set to 16.
+
+        @note In wxQt @a minVal must be less than @a maxVal.
     */
     void SetRange(int minVal, int maxVal);
 
@@ -337,7 +343,7 @@ public:
                long style = wxSP_ARROW_KEYS,
                double min = 0, double max = 100,
                double initial = 0, double inc = 1,
-               const wxString& name = wxT("wxSpinCtrlDouble"));
+               const wxString& name = "wxSpinCtrlDouble");
 
     /**
         Creation function called by the spin control constructor.
@@ -374,6 +380,10 @@ public:
     /**
         Returns the text in the text entry part of the control.
 
+        @note In wxQt, setting an empty string in the control is exactly the same
+        as calling SetValue(GetMin()). So this function always returns a non-empty
+        string under this platform.
+
         @since 3.1.6
     */
     wxString GetTextValue() const;
@@ -405,6 +415,8 @@ public:
 
     /**
         Sets range of allowable values.
+
+        @note In wxQt @a minVal must be less than @a maxVal.
     */
     void SetRange(double minVal, double maxVal);
 

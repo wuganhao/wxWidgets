@@ -1,7 +1,7 @@
-wxWidgets 3.2.8 Release Notes
+wxWidgets 3.3.0 Release Notes
 =============================
 
-Welcome to the new stable release of wxWidgets, a free and open source
+Welcome to the latest release of wxWidgets, a free and open source
 cross-platform C++ framework for writing advanced GUI applications using
 native controls.
 
@@ -16,7 +16,7 @@ more about wxWidgets at:
 
 Documentation is available online at:
 
-* https://docs.wxwidgets.org/3.2.8/
+* https://docs.wxwidgets.org/3.3.0/
 
 wxWidgets sources and binaries for the selected platforms are available for
 download from:
@@ -25,50 +25,36 @@ download from:
 
 or, for a more more permanent but less convenient to use link, from
 
-* https://github.com/wxWidgets/wxWidgets/releases/tag/v3.2.8/
+* https://github.com/wxWidgets/wxWidgets/releases/tag/v3.3.0/
 
-Please see https://docs.wxwidgets.org/3.2.8/overview_install.html for full
+Please see https://docs.wxwidgets.org/3.3.0/overview_install.html for full
 installation instructions.
 
 
 
-Changes since 3.2.7
--------------------
+Changes since 3.2
+-----------------
 
-This is mostly a bug fix release correcting several problems found in the
-previous 3.2.7 release:
+With more than 5300 commits since the last release, there are too many changes
+to list them all here, but here is just a summary of the most important ones:
 
-- Fix crash in wxPropertyGrid with wxGTK3 after recent change (#25286).
-- Fix padding of wxMenu in high DPI under Windows 11 (#25117).
-- Fix key codes in WXK_NUMPADx events in wxGTK (#25263).
-- Fix ABI breakage for versioned symbols in 3.2.7 (#25327).
-- Fix third party libraries build with Xcode 16.3.
-- Fix using OpenGL and WebView when using CMake install (#25266).
+- Support for dark mode in wxMSW under Windows 10 and later.
+- New Chrome-based wxWebView backend and many other wxWebView improvements.
+- Many improvements to wxAUI, including support for pinned and multiline tabs.
+- Support for WebP format in wxImage.
+- Support for high DPI cursors and animations.
+- Latest versions of 3rd party libraries.
+- Support for latest compilers (gcc 15, clang 19/Xcode 16) and C++ standards.
 
-But it still contains a couple of enhancements, including:
+Please see the change log for the more complete list of various improvements:
 
-- Add wxVector(std::initializer_list<U> list) ctor (#25290).
-- Add mouse scrolling support to generic wxSpinCtrl (#24935).
-- Add @USER@ macro to HTML and RichText printers (#25318).
+https://raw.githubusercontent.com/wxWidgets/wxWidgets/v3.3.0/docs/changes.txt
 
-Other changes include:
-
-- Call OnExceptionInMainLoop() in wxGTK if idle event handler throws (#25312).
-- Compute wxStaticText best size ourselves if GTK does it wrongly (#24781).
-- Fix page count display in wxHtmlPrintout when there is only one page (#25320).
-- Miscellaneous CMake build improvements (#25324).
-- Fix new warnings with gcc 15 (#25338).
-- Update Brazilian Portuguese translations.
-
-Please see the full change log for more details:
-
-https://raw.githubusercontent.com/wxWidgets/wxWidgets/v3.2.8/docs/changes.txt
-
-This release is API and ABI-compatible with the previous 3.2.x releases, so
-the existing applications don't even need to be rebuilt to profit from all the
-fixes above if they use shared/dynamic libraries. And if they do need to be
-recompiled, this can be done without any changes to the code.
-
+Note that in spite of all these changes, wxWidgets 3.3 is almost fully
+compatible with wxWidgets 3.2 and updating the existing applications to
+use it shouldn't require much effort. However please make sure to read the
+"INCOMPATIBLE CHANGES" section of the change log above when upgrading to be
+aware of the breaking changes in it.
 
 
 Supported Platforms
@@ -76,14 +62,13 @@ Supported Platforms
 
 This version of wxWidgets supports the following primary platforms:
 
-* Windows XP, Vista, 7, 8, 10 and 11 (32/64 bits).
-* Most Unix variants using the GTK toolkit (version 2.6 or newer or 3.x)
+* Windows 7, 8, 10 and 11 (32/64 bits).
+* Most Unix variants using the GTK+ toolkit (version 2.6 or newer)
 * macOS (10.10 or newer) using Cocoa (x86-64 or ARM).
 
 There is some support for the following platforms:
 
 * Most Unix variants with X11
-* Most Unix variants with Motif/Lesstif
 * Most Unix variants with GTK+ 1.2
 * Most Unix variants with Qt 5 or newer (experimental)
 
@@ -109,8 +94,8 @@ unrestricted distribution of application binaries. To answer a FAQ, you don't
 have to distribute any source if you wish to write commercial applications using
 wxWidgets.
 
-However, if you distribute wxGTK, wxQt or wxMotif (with Lesstif) version of your
-application, don't forget that it is linked against GTK+, Qt or Lesstif, which
+However, if you distribute wxGTK or wxQt version of your
+application, don't forget that it is linked against GTK or Qt, which
 are covered by LGPL *without* exception notice and so is bound by its
 requirements.
 
@@ -162,4 +147,4 @@ developed by its users and your contributions to it are always welcome!
 
 Have fun!
 
-The wxWidgets Team, April 2025
+The wxWidgets Team, June 2025

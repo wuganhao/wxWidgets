@@ -80,13 +80,13 @@ enum
 class wxToolBarToolBase : public wxObject
 {
 public:
-    wxToolBarToolBase(wxToolBarBase *tbar = NULL,
+    wxToolBarToolBase(wxToolBarBase *tbar = nullptr,
                       int toolid = wxID_SEPARATOR,
                       const wxString& label = wxEmptyString,
                       const wxBitmapBundle& bmpNormal = wxNullBitmap,
                       const wxBitmapBundle& bmpDisabled = wxNullBitmap,
                       wxItemKind kind = wxITEM_NORMAL,
-                      wxObject *clientData = NULL,
+                      wxObject *clientData = nullptr,
                       const wxString& shortHelpString = wxEmptyString,
                       const wxString& longHelpString = wxEmptyString);
 
@@ -171,10 +171,8 @@ public:
     the menu bar in a wxFrame.
 
     You may create a toolbar that is managed by a frame calling
-    wxFrame::CreateToolBar(). Under Pocket PC, you should always use this
-    function for creating the toolbar to be managed by the frame, so that
-    wxWidgets can use a combined menubar and toolbar. Where you manage your
-    own toolbars, create wxToolBar as usual.
+    wxFrame::CreateToolBar(). Where you manage your own toolbars,
+    create wxToolBar as usual.
 
     There are several different types of tools you can add to a toolbar.
     These types are controlled by the ::wxItemKind enumeration.
@@ -342,7 +340,7 @@ public:
                                     const wxBitmapBundle& bmpDisabled = wxNullBitmap,
                                     const wxString& shortHelp = wxEmptyString,
                                     const wxString& longHelp = wxEmptyString,
-                                    wxObject* clientData = NULL);
+                                    wxObject* clientData = nullptr);
 
     /**
         Adds any control to the toolbar, typically e.g.\ a wxComboBox.
@@ -354,7 +352,7 @@ public:
 
         @remarks
             wxMac: labels are only displayed if wxWidgets is built with @c
-            wxMAC_USE_NATIVE_TOOLBAR set to 1
+            wxOSX_USE_NATIVE_TOOLBAR set to 1 (which is the default).
     */
     virtual wxToolBarToolBase* AddControl(wxControl* control,
                                           const wxString& label = wxEmptyString);
@@ -378,7 +376,7 @@ public:
                                     const wxBitmapBundle& bmpDisabled = wxNullBitmap,
                                     const wxString& shortHelp = wxEmptyString,
                                     const wxString& longHelp = wxEmptyString,
-                                    wxObject* clientData = NULL);
+                                    wxObject* clientData = nullptr);
 
     /**
         Adds a separator for spacing groups of tools.
@@ -503,7 +501,7 @@ public:
                                wxItemKind kind = wxITEM_NORMAL,
                                const wxString& shortHelp = wxEmptyString,
                                const wxString& longHelp = wxEmptyString,
-                               wxObject* clientData = NULL);
+                               wxObject* clientData = nullptr);
     ///@}
 
     /**
@@ -758,7 +756,7 @@ public:
                                     wxItemKind kind = wxITEM_NORMAL,
                                     const wxString& shortHelp = wxEmptyString,
                                     const wxString& longHelp = wxEmptyString,
-                                    wxObject *clientData = NULL);
+                                    wxObject *clientData = nullptr);
 
     wxToolBarToolBase* InsertTool(size_t pos,
                                   wxToolBarToolBase* tool);
@@ -843,7 +841,7 @@ public:
     /**
         Sets the dropdown menu for the tool given by its @e id. The tool itself
         will delete the menu when it's no longer needed. Only supported under
-        GTK+ und MSW.
+        GTK+ and MSW.
 
         If you define a EVT_TOOL_DROPDOWN() handler in your program, you must
         call wxEvent::Skip() from it or the menu won't be displayed.
@@ -1025,7 +1023,7 @@ public:
                                           const wxBitmapBundle& bmpNormal,
                                           const wxBitmapBundle& bmpDisabled = wxNullBitmap,
                                           wxItemKind kind = wxITEM_NORMAL,
-                                          wxObject *clientData = NULL,
+                                          wxObject *clientData = nullptr,
                                           const wxString& shortHelp = wxEmptyString,
                                           const wxString& longHelp = wxEmptyString);
     /**

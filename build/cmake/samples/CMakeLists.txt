@@ -8,13 +8,12 @@
 #############################################################################
 
 wx_add_sample(access accesstest.cpp DEPENDS wxUSE_ACCESSIBILITY)
-wx_add_sample(animate anitest.cpp anitest.h DATA throbber.gif hourglass.ani DEPENDS wxUSE_ANIMATIONCTRL)
+wx_add_sample(animate anitest.cpp anitest.h DATA throbber.gif throbber_2x.gif hourglass.ani DEPENDS wxUSE_ANIMATIONCTRL)
 wx_add_sample(archive CONSOLE)
 wx_add_sample(artprov arttest.cpp artbrows.cpp artbrows.h)
-wx_add_sample(aui auidemo.cpp LIBRARIES wxaui wxhtml NAME auidemo DEPENDS wxUSE_AUI)
+wx_add_sample(aui auidemo.cpp LIBRARIES wxaui wxhtml wxxml NAME auidemo DEPENDS wxUSE_AUI)
 wx_add_sample(calendar DEPENDS wxUSE_CALENDARCTRL)
 wx_add_sample(caret DEPENDS wxUSE_CARET)
-wx_add_sample(clipboard DEPENDS wxUSE_CLIPBOARD)
 wx_add_sample(collpane DEPENDS wxUSE_COLLPANE)
 wx_add_sample(combo DATA dropbuth.svg dropbutn.svg dropbutp.svg three-dots.svg DEPENDS wxUSE_COMBOCTRL)
 wx_add_sample(config conftest.cpp DEPENDS wxUSE_CONFIG)
@@ -67,8 +66,8 @@ wx_add_sample(htlbox LIBRARIES wxhtml DEPENDS wxUSE_HTML)
 if(wxUSE_HTML)
     include(html.cmake)
 endif()
-wx_add_sample(image image.cpp canvas.cpp canvas.h cursor_png.c RES image.rc
-    DATA horse.png horse.jpg horse.bmp horse.gif horse.pcx horse.pnm
+wx_add_sample(image image.cpp canvas.cpp canvas.h RES image.rc
+    DATA horse.png horse.jpg horse.bmp horse.gif horse.pcx horse.pnm horse.webp
     horse_ag.pnm horse_rg.pnm horse.tif horse.tga horse.xpm horse.cur
     horse.ico horse3.ani horse.svg smile.xbm toucan.png cmyk.jpg cursor.png
     NAME imagesample DEPENDS wxUSE_IMAGE)
@@ -89,9 +88,6 @@ wx_add_sample(layout layout.cpp layout.h)
 wx_add_sample(listctrl listtest.cpp listtest.h RES listtest.rc DEPENDS wxUSE_LISTCTRL)
 wx_add_sample(mdi mdi.cpp mdi.h RES mdi.rc DEPENDS wxUSE_MDI wxUSE_DOC_VIEW_ARCHITECTURE wxUSE_MDI_ARCHITECTURE)
 wx_add_sample(mediaplayer LIBRARIES wxmedia DEPENDS wxUSE_MEDIACTRL)
-if(wxBUILD_DEBUG_LEVEL STREQUAL "Default" OR wxBUILD_DEBUG_LEVEL GREATER 0)
-    wx_add_sample(memcheck)
-endif()
 wx_add_sample(menu DEPENDS wxUSE_MENUS wxUSE_MENUBAR)
 wx_add_sample(minimal IMPORTANT)
 wx_add_sample(notebook notebook.cpp notebook.h LIBRARIES wxaui DEPENDS wxUSE_NOTEBOOK)
@@ -118,7 +114,7 @@ wx_add_sample(power)
 wx_add_sample(preferences DEPENDS wxUSE_PREFERENCES_EDITOR)
 wx_add_sample(printing printing.cpp printing.h DEPENDS wxUSE_PRINTING_ARCHITECTURE)
 wx_add_sample(propgrid propgrid.cpp propgrid_minimal.cpp sampleprops.cpp
-    tests.cpp sampleprops.h propgrid.h LIBRARIES wxpropgrid NAME propgriddemo DEPENDS wxUSE_PROPGRID)
+    sampleprops.h propgrid.h LIBRARIES wxpropgrid wxxrc NAME propgriddemo DEPENDS wxUSE_PROPGRID)
 wx_add_sample(render FOLDER render)
 wx_add_sample(render DLL renddll.cpp NAME renddll FOLDER render)
 wx_add_sample(ribbon ribbondemo.cpp LIBRARIES wxribbon NAME ribbondemo DEPENDS wxUSE_RIBBON)
@@ -148,17 +144,15 @@ wx_add_sample(taskbar tbtest.cpp tbtest.h DATA info.svg DEPENDS wxUSE_TASKBARICO
 wx_add_sample(text DEPENDS wxUSE_TEXTCTRL)
 wx_add_sample(thread DEPENDS wxUSE_THREADS)
 wx_add_sample(toolbar RES toolbar.rc DEPENDS wxUSE_TOOLBAR)
+wx_add_sample(touchtest touchtest.cpp)
 wx_add_sample(treectrl treetest.cpp treetest.h DEPENDS wxUSE_TREECTRL)
 wx_add_sample(treelist DEPENDS wxUSE_TREELISTCTRL)
 wx_add_sample(typetest typetest.cpp typetest.h)
 wx_add_sample(uiaction DEPENDS wxUSE_UIACTIONSIMULATOR)
 wx_add_sample(validate validate.cpp validate.h DEPENDS wxUSE_VALIDATORS)
 wx_add_sample(vscroll vstest.cpp)
-wx_add_sample(webview LIBRARIES wxwebview
-    DATA ../help/doc.zip:doc.zip
-    NAME webviewsample DEPENDS wxUSE_WEBVIEW)
-if(TARGET webviewsample AND wxUSE_STC)
-    wx_exe_link_libraries(webviewsample wxstc)
+if(wxUSE_WEBVIEW)
+    include(webview.cmake)
 endif()
 wx_add_sample(webrequest LIBRARIES wxnet DEPENDS wxUSE_WEBREQUEST)
 # widgets Sample
@@ -282,8 +276,14 @@ if(WIN32)
 
     if(WXMSW)
         wx_add_sample(nativdlg nativdlg.cpp nativdlg.h resource.h RES nativdlg.rc)
-        #TODO: reenable when sample is fixed
-        #wx_add_sample(mfc mfctest.cpp mfctest.h resource.h stdafx.h RES mfctest.rc)
         wx_add_sample(taskbarbutton DEPENDS wxUSE_TASKBARBUTTON)
+
+        # only check if MFC is available when the mfc sample is enabled
+        if(wxBUILD_SAMPLES STREQUAL "ALL")
+            find_package(MFC QUIET)
+            if(MFC_FOUND)
+                wx_add_sample(mfc mfctest.cpp mfctest.h resource.h stdafx.h RES mfctest.rc)
+            endif()
+        endif()
     endif()
 endif()

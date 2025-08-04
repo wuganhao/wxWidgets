@@ -137,12 +137,12 @@ class TestDirTraverser : public wxDirTraverser
 public:
     wxArrayString dirs;
 
-    virtual wxDirTraverseResult OnFile(const wxString& WXUNUSED(filename)) wxOVERRIDE
+    virtual wxDirTraverseResult OnFile(const wxString& WXUNUSED(filename)) override
     {
         return wxDIR_CONTINUE;
     }
 
-    virtual wxDirTraverseResult OnDir(const wxString& dirname) wxOVERRIDE
+    virtual wxDirTraverseResult OnDir(const wxString& dirname) override
     {
         dirs.push_back(dirname);
         return wxDIR_CONTINUE;
@@ -288,14 +288,13 @@ TEST_CASE("Dir::Match", "[.]")
     // Show the results of matching the pattern using various functions.
     wxPrintf("%-15s %20s %20s %20s\n",
              "File", "wxString::Matches", "wxMatchWild", "PathMatchSpec");
-    for ( size_t n = 0; n < WXSIZEOF(filenames); ++n )
+    for ( const auto& fn : filenames )
     {
-        const wxString fn = filenames[n];
         wxPrintf("%-15s %20d %20d %20d\n",
                  fn,
                  fn.Matches(filter),
                  wxMatchWild(filter, fn),
-                 PathMatchSpec(fn.t_str(), filter.t_str()) == TRUE);
+                 PathMatchSpec(fn.wc_str(), filter.wc_str()) == TRUE);
     }
 }
 

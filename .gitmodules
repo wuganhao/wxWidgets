@@ -24,9 +24,21 @@
 	branch = wx
 [submodule "3rdparty/pcre"]
 	path = 3rdparty/pcre
-	url = https://github.com/wxWidgets/pcre
+	url = https://github.com/wxWidgets/pcre.git
 	branch = wx
 [submodule "3rdparty/nanosvg"]
 	path = 3rdparty/nanosvg
-	url = https://github.com/wxWidgets/nanosvg
+	url = https://github.com/wxWidgets/nanosvg.git
+	branch = wx
+[submodule "src/stc/scintilla"]
+	path = src/stc/scintilla
+	url = https://github.com/wxWidgets/scintilla.git
+	branch = wx
+[submodule "src/stc/lexilla"]
+	path = src/stc/lexilla
+	url = https://github.com/wxWidgets/lexilla.git
+	branch = wx
+[submodule "3rdparty/libwebp"]
+	path = 3rdparty/libwebp
+	url = https://github.com/wxWidgets/libwebp.git
 	branch = wx

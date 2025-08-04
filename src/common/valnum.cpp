@@ -80,7 +80,7 @@ wxTextEntry *wxNumValidatorBase::GetTextEntry() const
         return combo;
 #endif // wxUSE_COMBOBOX
 
-    return NULL;
+    return nullptr;
 }
 
 void
@@ -150,7 +150,6 @@ void wxNumValidatorBase::OnChar(wxKeyEvent& event)
     if ( !m_validatorWindow )
         return;
 
-#if wxUSE_UNICODE
     const int ch = event.GetUnicodeKey();
     if ( ch == WXK_NONE )
     {
@@ -158,18 +157,17 @@ void wxNumValidatorBase::OnChar(wxKeyEvent& event)
         // arrow or function key, we never filter those.
         return;
     }
-#else // !wxUSE_UNICODE
-    const int ch = event.GetKeyCode();
-    if ( ch > WXK_DELETE )
-    {
-        // Not a character either.
-        return;
-    }
-#endif // wxUSE_UNICODE/!wxUSE_UNICODE
 
     if ( ch < WXK_SPACE || ch == WXK_DELETE )
     {
-        // Allow ASCII control characters and Delete.
+        // Not a character neither.
+        return;
+    }
+
+    if ( event.GetModifiers() & ~wxMOD_SHIFT )
+    {
+        // Keys using modifiers other than Shift don't change the number, so
+        // ignore them.
         return;
     }
 
@@ -278,8 +276,8 @@ wxIntegerValidatorBase::FromString(const wxString& s,
 }
 
 bool
-wxIntegerValidatorBase::IsCharOk(const wxString& WXUNUSED(val),
-                                 int WXUNUSED(pos),
+wxIntegerValidatorBase::IsCharOk(const wxString& val,
+                                 int pos,
                                  wxChar ch) const
 {
     // We only accept digits here (remember that '-' is taken care of by the
@@ -288,9 +286,13 @@ wxIntegerValidatorBase::IsCharOk(const wxString& WXUNUSED(val),
         return false;
 
     // Accept anything that looks like a number here, notably do _not_ call
-    // IsInRange() because this would prevent entering any digits in an
-    // initially empty control limited to the values between "10" and "20".
-    return true;
+    // And the value after insertion needs to be in the defined range.
+    // allowed on input.
+    LongestValueType value;
+    if ( !FromString(GetValueAfterInsertingChar(val, pos, ch), &value) )
+        return false;
+
+    return IsInInputRange(value);
 }
 
 // ============================================================================
@@ -331,7 +333,7 @@ wxFloatingPointValidatorBase::IsCharOk(const wxString& val,
                                        int pos,
                                        wxChar ch) const
 {
-    const wxChar separator = wxNumberFormatter::GetDecimalSeparator();
+    const wxUniChar separator = wxNumberFormatter::GetDecimalSeparator();
     if ( ch == separator )
     {
         if ( val.find(separator) != wxString::npos )
@@ -369,9 +371,9 @@ wxFloatingPointValidatorBase::IsCharOk(const wxString& val,
     if ( posSep != wxString::npos && newval.length() - posSep - 1 > m_precision )
         return false;
 
-    // Note that we do _not_ check if it's in range here, see the comment in
+    // Finally check whether it is in the range.
     // wxIntegerValidatorBase::IsCharOk().
-    return true;
+    return IsInInputRange(value);
 }
 
 #endif // wxUSE_VALIDATORS && wxUSE_TEXTCTRL

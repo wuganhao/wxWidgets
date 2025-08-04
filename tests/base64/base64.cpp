@@ -49,7 +49,7 @@ static void generateRandomData(void* buff, size_t len)
     unsigned char *cbuff = (unsigned char *)buff;
     while(len--)
     {
-        *(cbuff++) = (unsigned char)(((rand() * 255) / RAND_MAX));
+        *(cbuff++) = (unsigned char)((rand() / (float)RAND_MAX * 255.) + 1);
     }
 }
 
@@ -61,7 +61,7 @@ static void generateGibberish(void* buff, size_t len)
     unsigned char *cbuff = (unsigned char *)buff;
     while(len--)
     {
-        *(cbuff++) = cb64[((rand() * 64) / RAND_MAX)];
+        *(cbuff++) = cb64[(size_t)((rand() / (float)RAND_MAX * 64.) + 1)];
     }
 }
 
@@ -254,7 +254,7 @@ void Base64TestCase::EncodeDecodePatternC()
 
 void Base64TestCase::EncodeDecodeRandom()
 {
-    size_t size = rand() * 3000 / RAND_MAX + 11;
+    size_t size = (size_t)(rand() / (float)RAND_MAX * 3000. + 11);
     unsigned char *buff = new unsigned char[size];
     generateRandomData(buff, size);
     wxString str = wxBase64Encode(buff, size);
@@ -273,29 +273,29 @@ void Base64TestCase::EncodeDecodeRandom()
 void Base64TestCase::DecodeInvalid()
 {
     size_t rc, posErr;
-    rc = wxBase64Decode(NULL, 0, "one two!", wxNO_LEN,
+    rc = wxBase64Decode(nullptr, 0, "one two!", wxNO_LEN,
                         wxBase64DecodeMode_Strict, &posErr);
     CPPUNIT_ASSERT_EQUAL( wxCONV_FAILED, rc);
     CPPUNIT_ASSERT_EQUAL( 3, posErr );
 
-    rc = wxBase64Decode(NULL, 0, "one two!", wxNO_LEN,
+    rc = wxBase64Decode(nullptr, 0, "one two!", wxNO_LEN,
                         wxBase64DecodeMode_SkipWS, &posErr);
     CPPUNIT_ASSERT_EQUAL( wxCONV_FAILED, rc);
     CPPUNIT_ASSERT_EQUAL( 7, posErr );
 
-    rc = wxBase64Decode(NULL, 0, "? QQ==", wxNO_LEN,
+    rc = wxBase64Decode(nullptr, 0, "? QQ==", wxNO_LEN,
                         wxBase64DecodeMode_SkipWS, &posErr);
     CPPUNIT_ASSERT_EQUAL( wxCONV_FAILED, rc);
     CPPUNIT_ASSERT_EQUAL( 0, posErr );
 
     const size_t POS_INVALID = (size_t)-1;
     posErr = POS_INVALID;
-    rc = wxBase64Decode(NULL, 0, " QQ==", wxNO_LEN,
+    rc = wxBase64Decode(nullptr, 0, " QQ==", wxNO_LEN,
                         wxBase64DecodeMode_SkipWS, &posErr);
     CPPUNIT_ASSERT_EQUAL( 1, rc );
     CPPUNIT_ASSERT_EQUAL( POS_INVALID, posErr );
 
-    rc = wxBase64Decode(NULL, 0, "? QQ==", wxNO_LEN,
+    rc = wxBase64Decode(nullptr, 0, "? QQ==", wxNO_LEN,
                         wxBase64DecodeMode_Relaxed, &posErr);
     CPPUNIT_ASSERT_EQUAL( 1, rc );
     CPPUNIT_ASSERT_EQUAL( POS_INVALID, posErr );

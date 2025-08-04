@@ -42,14 +42,13 @@
     #endif
 
     // This macro is used to repair ABI compatibility problems with the symbols
-    // versions: unfortunately, some symbols were initially added with the
-    // wrong "3.2" version tag because their definitions in the version script
-    // were erroneous, and, even more unfortunately, they were later corrected
-    // to use a different version tag, which made the symbols with the old
-    // version unavailable in the shared library. This macro allows to define
-    // both the old, compatible version ("3.2") and the new ("3.2.N") one for
-    // the given symbol to restore ABI compatibility with the previous releases
-    // without breaking it with the release containing the corrected version.
+    // versions if any symbols are added with the wrong "3.4" version tag
+    // because their definitions in the version script were erroneous.
+    //
+    // It allows to define both the old, compatible version ("3.4") and the new
+    // ("3.4.N") one for the given symbol to restore ABI compatibility with the
+    // previous releases without breaking it with the release containing the
+    // corrected version.
     //
     // The parameters are the mangled symbol name (the simplest way to get is
     // probably to use nm or readelf on the object file or library) and the
@@ -58,7 +57,7 @@
     // Note that this macro takes strings, not symbols, and that it includes
     // the trailing semicolon for consistency with the empty version below.
     #define wxELF_VERSION_COMPAT(sym, ver) \
-        wxELF_SYMVER_NON_DEFAULT(sym, sym "@" wxMAKE_ELF_VERSION_TAG("3.2")) \
+        wxELF_SYMVER_NON_DEFAULT(sym, sym "@" wxMAKE_ELF_VERSION_TAG("3.4")) \
         wxELF_SYMVER(sym, sym "@@" wxMAKE_ELF_VERSION_TAG(ver))
 #else
     #define wxELF_VERSION_COMPAT(sym, ver)

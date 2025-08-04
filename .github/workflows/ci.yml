@@ -50,6 +50,17 @@ on:
       - '*.yml'
       - 'CMakeLists.txt'
       - 'wxwidgets.props'
+  workflow_dispatch:
+    inputs:
+      debug_tests:
+        type: boolean
+        description: 'Enable ssh server before running the tests'
+        required: false
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -58,7 +69,11 @@ jobs:
   build:
     runs-on: ${{ matrix.runner }}
     name: ${{ matrix.name }}
-    container: ${{ matrix.container }}
+    container:
+      image: ${{ matrix.container }}
+      # We need to make container privileged just to allow writing to
+      # /proc/sys/kernel/core* files below.
+      options: --privileged
     strategy:
       fail-fast: false
       matrix:
@@ -78,31 +93,41 @@ jobs:
             runner: ubuntu-latest
             compiler: g++-4.8
             container: ubuntu:18.04
-            compiler_flags: -std=c++98
             configure_flags: --disable-shared
+            allow_extra_warnings: true
             use_xvfb: true
-          - name: Ubuntu 18.04 wxGTK 3 STL
+          - name: Ubuntu 18.04 wxGTK 3 compatible 3.0
             runner: ubuntu-latest
             container: ubuntu:18.04
-            configure_flags: --enable-cxx11 --enable-pch --enable-stl --disable-compat30
+            configure_flags: --enable-compat30 --enable-pch
             use_xvfb: true
-            build_out_of_tree_samples: true
           - name: Ubuntu 20.04 wxGTK 3 with clang
             runner: ubuntu-latest
             container: ubuntu:20.04
             compiler: clang++-10
             configure_flags: --disable-sys-libs
+            extra_warnings: -Winconsistent-missing-override
             use_xvfb: true
-          - name: Ubuntu 22.04 wxGTK ANSI
+          - name: Ubuntu 22.04 wxGTK with wx containers
             runner: ubuntu-22.04
-            configure_flags: --disable-unicode
-            skip_samples: true
+            configure_flags: --enable-compat30 --disable-std_containers
+            extra_warnings: -Wsuggest-override
+            use_xvfb: true
+            check_headers: true
           - name: Ubuntu 24.04 wxGTK with ASAN
             runner: ubuntu-24.04
-            configure_flags: --disable-compat30 --disable-sys-libs
+            configure_flags: --disable-compat32 --disable-sys-libs
+            extra_warnings: -Wsuggest-override
             skip_samples: true
             use_asan: true
             use_xvfb: true
+          - name: Ubuntu 24.04 wxGTK with UBSAN
+            runner: ubuntu-24.04
+            configure_flags: --with-cxx=20
+            extra_warnings: -Wsuggest-override
+            use_ubsan: true
+            use_xvfb: true
+            build_out_of_tree_samples: true
           - name: Ubuntu 18.04 wxX11
             runner: ubuntu-latest
             container: ubuntu:18.04
@@ -111,19 +136,15 @@ jobs:
           - name: Ubuntu 18.04 wxDFB
             runner: ubuntu-latest
             container: ubuntu:18.04
-            configure_flags: --with-directfb --enable-pch --disable-stc
+            configure_flags: --with-directfb --disable-stc
             skip_samples: true
             allow_warnings: true
-          - name: Ubuntu 18.04 wxMotif
-            runner: ubuntu-latest
-            container: ubuntu:18.04
-            configure_flags: --with-motif --enable-pch --disable-stc
-            skip_samples: true
           - name: Ubuntu 18.04 wxQt
             runner: ubuntu-latest
             container: ubuntu:18.04
-            configure_flags: --with-qt --enable-pch --without-opengl
+            configure_flags: --with-qt --without-opengl
             skip_samples: true
+            use_xvfb: true
 
     env:
       wxGTK_VERSION: ${{ matrix.gtk_version && matrix.gtk_version || 3 }}
@@ -174,7 +195,7 @@ jobs:
               #   - locales contains locale-gen also used below.
               #   - xvfb is used for running the GUI tests.
               apt-get update -qq
-              apt-get install -qq coreutils ${compiler_packages} git locales make pkg-config sudo xvfb
+              apt-get install -qq coreutils ${compiler_packages} git make pkg-config sudo xvfb
 
               # Checkout action doesn't work under Ubuntu 18.04 any more, so
               # run checkout manually.
@@ -187,6 +208,10 @@ jobs:
               git checkout FETCH_HEAD
               git submodule update --init --depth=1 --recursive
               git log -1 --format='%H'
+
+              # We can't easily install Go either, so skip the tests requiring
+              # httpbin.
+              echo WX_TEST_WEBREQUEST_URL=0 >> $GITHUB_ENV
               ;;
 
             '')
@@ -211,8 +236,6 @@ jobs:
 
       - name: Set up build environment
         run: |
-          echo LD_LIBRARY_PATH=`pwd`/lib >> $GITHUB_ENV
-
           wxPROC_COUNT=`./build/tools/proc_count.sh`
           echo wxBUILD_ARGS=-j$wxPROC_COUNT >> $GITHUB_ENV
 
@@ -248,6 +271,13 @@ jobs:
               allow_warn_opt="-Wno-error=cpp"
               ;;
 
+            g++*)
+              echo CC=`echo $compiler | sed s/++/cc/` >> $GITHUB_ENV
+              echo CXX=$compiler >> $GITHUB_ENV
+              echo LD=$compiler >> $GITHUB_ENV
+              allow_warn_opt="-Wno-error=cpp"
+              ;;
+
             '')
               # Assume gcc but use the compiler flags if specified.
               echo 'CXX=g++ ${{ matrix.compiler_flags }}' >> $GITHUB_ENV
@@ -260,16 +290,15 @@ jobs:
           esac
 
           if [ -z ${{ matrix.allow_warnings }} ]; then
-            error_opts="-Werror $allow_warn_opt"
+            if [ -z ${{ matrix.allow_extra_warnings }} ]; then
+              error_opts="-DwxENABLE_EXTRA_WARNINGS ${{ matrix.extra_warnings }}"
+            fi
+            error_opts="$error_opts -Werror $allow_warn_opt"
             echo "wxMAKEFILE_ERROR_CXXFLAGS=$error_opts" >> $GITHUB_ENV
             echo "wxMAKEFILE_CXXFLAGS=$wxMAKEFILE_CXXFLAGS $error_opts" >> $GITHUB_ENV
           fi
 
           echo "wxMAKEFILE_CXXFLAGS=$wxMAKEFILE_CXXFLAGS $error_opts" >> $GITHUB_ENV
-
-          # Install locales used by our tests to run all the tests instead of
-          # skipping them.
-          sudo locale-gen de_DE.utf8 de_CH.utf8 en_US.utf8 fr_FR.utf8 sv_SE.utf8
 
           ./build/tools/before_install.sh
 
@@ -277,6 +306,10 @@ jobs:
         run: |
           echo "Environment:"
           env | sort
+          echo
+
+          echo "Make version:"
+          make --version
           echo
 
           echo "Compiler version:"
@@ -287,6 +320,10 @@ jobs:
           ccache --version || echo "ccache not available"
           echo
 
+          echo "Free space:"
+          df -h /
+          echo
+
       - name: Configuring
         run: |
           wxCONFIGURE_OPTIONS="--disable-optimise $wxCONFIGURE_FLAGS"
@@ -295,11 +332,18 @@ jobs:
           fi
 
           if [ ${{ matrix.use_asan }} ]; then
-            wxASAN_CFLAGS="-fsanitize=address -fno-omit-frame-pointer"
-            wxASAN_CXXFLAGS=$wxASAN_CFLAGS
-            wxASAN_LDFLAGS="-fsanitize=address"
+            wxSANITIZER_FLAGS='-fsanitize=address'
 
-            ./configure $wxCONFIGURE_OPTIONS --enable-debug "CFLAGS=$wxASAN_CFLAGS" "CXXFLAGS=$wxASAN_CXXFLAGS" "LDFLAGS=$wxASAN_LDFLAGS" || rc=$?
+            echo 'ASAN_OPTIONS=fast_unwind_on_malloc=0' >> $GITHUB_ENV
+          elif [ ${{ matrix.use_ubsan }} ]; then
+            wxSANITIZER_FLAGS='-fsanitize=undefined'
+          fi
+
+          if [ -n "$wxSANITIZER_FLAGS" ]; then
+            ./configure $wxCONFIGURE_OPTIONS --enable-debug \
+                "CFLAGS=$wxSANITIZER_FLAGS -fno-omit-frame-pointer" \
+                "CXXFLAGS=$wxSANITIZER_FLAGS -fno-omit-frame-pointer" \
+                "LDFLAGS=$wxSANITIZER_FLAGS" || rc=$?
           else
             ./configure $wxCONFIGURE_OPTIONS --disable-debug_info || rc=$?
           fi
@@ -330,14 +374,25 @@ jobs:
       - name: Building tests
         working-directory: tests
         run: |
+          if [ ${{ matrix.check_headers }} ]; then
+            echo "Checking that all headers are self-contained..."
+            make allheaders_selfcontained
+            echo "Done."
+          fi
           make $wxBUILD_ARGS failtest
           make -k $wxBUILD_ARGS "CXXFLAGS=$wxMAKEFILE_CXXFLAGS" "LDFLAGS=$wxMAKEFILE_LDFLAGS"
+
+
+      - name: Setup tmate
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_tests }}
 
       - name: Setup Go
         if: matrix.container != 'ubuntu:18.04'
         uses: actions/setup-go@v5
         with:
           go-version: '1'
+          cache: false
 
       - name: Testing
         working-directory: tests
@@ -346,7 +401,11 @@ jobs:
 
           httpbin_launch
 
-          export ASAN_OPTIONS=fast_unwind_on_malloc=0
+          if [ ${{ matrix.use_ubsan }} ]; then
+            # First run wiht UBSAN: halt on first error to make sure we fail if
+            # any UB is detected.
+            export UBSAN_OPTIONS=halt_on_error=1
+          fi
 
           # Explicitly use bash because /bin/sh doesn't have pipefail option
           /bin/bash -o pipefail -c './test 2>&1 | tee test.out' || rc=$?
@@ -360,10 +419,24 @@ jobs:
             fi
           fi
 
+          if [ ${{ matrix.use_ubsan }} ]; then
+            if grep -qF ': runtime error: ' test.out; then
+              export UBSAN_OPTIONS=print_stacktrace=1
+              echo '+++ UB detected, rerunning the tests to show all occurrences +++'
+              ./test
+              # Leave rc set to non-zero value to indicate failure.
+            fi
+          fi
+
           if [ -n "$rc" ]; then
             httpbin_show_log
             exit $rc
           fi
+
+      - name: Testing launching GUI test
+        working-directory: tests
+        run: |
+          WX_TEST_DISABLE_GUI=1 ./test_gui
 
       - name: Testing GUI using Xvfb
         if: matrix.use_xvfb
@@ -376,16 +449,32 @@ jobs:
             if [ -f wx_dbgsym_available ]; then
                 export LSAN_OPTIONS=suppressions=$(pwd)/misc/suppressions/lsan
             else
-                ASAN_OPTIONS=detect_leaks=0
+                ASAN_OPTIONS="$ASAN_OPTIONS detect_leaks=0"
             fi
-            export ASAN_OPTIONS="$ASAN_OPTIONS fast_unwind_on_malloc=0"
 
             # Running all tests at once fails, apparently due to running out of
             # memory when using ASAN, work around this problem by excluding
             # RichTextCtrlTestCase whose Table sub-test seems to be problematic.
             wx_tests_selection='~[.] ~RichTextCtrlTestCase'
           fi
+
+          if [ ${{ matrix.use_ubsan }} ]; then
+            # First run with UBSAN: halt on first error to make sure we fail if
+            # any UB is detected.
+            export UBSAN_OPTIONS=halt_on_error=1
+          fi
+
+          # The tests only work reliably with native windows
+          export QT_USE_NATIVE_WINDOWS=1
+
+          # Configure the system to create core files and create them in the
+          # current directory instead of using apport to handle them, as
+          # Ubuntu does by default (even in a container where apport is not
+          # only not running but not even installed). Also turn off appending
+          # PID to the core files names which is on by default.
           ulimit -c unlimited
+          echo core | sudo tee /proc/sys/kernel/core_pattern
+          echo 0 | sudo tee /proc/sys/kernel/core_uses_pid
 
           # This is exceedingly weird, but for some reason the first test using
           # wxWebView sometimes fails (even if the timeout in the test is
@@ -394,6 +483,17 @@ jobs:
           xvfb-run -a -s '-screen 0 1600x1200x24' ./test_gui -c Title WebView >/dev/null 2>&1 || echo 'First wxWebView test failure ignored.'
 
           /bin/bash -o pipefail -c "xvfb-run -a -s '-screen 0 1600x1200x24' ./test_gui -d 1 $wx_tests_selection 2>&1 | tee -a test_gui.out" || rc=$?
+
+          if [ ${{ matrix.use_ubsan }} ]; then
+            if grep -qF ': runtime error: ' test_gui.out; then
+              echo "\n\n+++ UB detected, rerunning the tests to show all occurrences +++\n"
+              export UBSAN_OPTIONS=print_stacktrace=1
+              xvfb-run -a -s '-screen 0 1600x1200x24' ./test_gui $wx_tests_selection
+              # rc should be already set to non-zero value, but make sure of it.
+              rc=1
+            fi
+          fi
+
           if [ -n "$rc" ]; then
             if grep -qF '(core dumped)' test_gui.out; then
                 echo '*** Test crashed, trying to get more information ***'
@@ -401,6 +501,7 @@ jobs:
             fi
             exit $rc
           fi
+
 
       - name: Building samples
         if: matrix.skip_samples != true

@@ -2,7 +2,6 @@
 // Name:        calendar.cpp
 // Purpose:     wxCalendarCtrl sample
 // Author:      Vadim Zeitlin
-// Modified by:
 // Created:     02.01.00
 // Copyright:   (c) Vadim Zeitlin
 // Licence:     wxWindows licence
@@ -75,7 +74,7 @@ public:
     // this one is called on application startup and is a good place for the app
     // initialization (doing it here and not in the ctor allows to have an error
     // return: if OnInit() returns false, the application terminates)
-    virtual bool OnInit() wxOVERRIDE;
+    virtual bool OnInit() override;
 };
 
 class MyPanel : public wxPanel
@@ -346,7 +345,7 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
 
 
     EVT_UPDATE_UI(Calendar_Cal_SeqMonth, MyFrame::OnUpdateUIGenericOnly)
-#ifdef __WXGTK20__
+#ifdef __WXGTK__
     EVT_UPDATE_UI(Calendar_Cal_AutoWeekday, MyFrame::OnUpdateUIGenericOnly)
     EVT_UPDATE_UI(Calendar_Cal_Sunday, MyFrame::OnUpdateUIGenericOnly)
     EVT_UPDATE_UI(Calendar_Cal_Monday, MyFrame::OnUpdateUIGenericOnly)
@@ -408,7 +407,7 @@ bool MyApp::OnInit()
 
 // frame constructor
 MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
-       : wxFrame((wxFrame *)NULL, wxID_ANY, title, pos, size)
+       : wxFrame(nullptr, wxID_ANY, title, pos, size)
 {
     // set the frame icon
     SetIcon(wxICON(sample));
@@ -667,7 +666,7 @@ void MyFrame::OnCalRClick(wxMouseEvent& event)
             break;
     }
 
-    wxLogMessage("%s", msg);
+    wxLogMessage(msg);
 }
 
 #if wxUSE_DATEPICKCTRL
@@ -947,11 +946,11 @@ wxEND_EVENT_TABLE()
 MyDateDialog::MyDateDialog(wxWindow *parent, const wxDateTime& dt, int dtpStyle)
         : wxDialog(parent, wxID_ANY, wxString("Calendar: Choose a date"))
 {
-    wxWindow* datePickerWindow = NULL;
+    wxWindow* datePickerWindow = nullptr;
 
 #if wxUSE_DATEPICKCTRL_GENERIC
-    m_datePickerGeneric = NULL;
-    m_datePicker = NULL;
+    m_datePickerGeneric = nullptr;
+    m_datePicker = nullptr;
 
     wxFrame *frame = (wxFrame *)wxGetTopLevelParent(parent);
     if ( frame && frame->GetMenuBar()->IsChecked(Calendar_DatePicker_Generic) )
@@ -1021,11 +1020,11 @@ wxEND_EVENT_TABLE()
 MyTimeDialog::MyTimeDialog(wxWindow *parent)
         : wxDialog(parent, wxID_ANY, wxString("Calendar: Choose time"))
 {
-    wxWindow* timePickerWindow = NULL;
+    wxWindow* timePickerWindow = nullptr;
 
 #if wxUSE_TIMEPICKCTRL_GENERIC
-    m_timePickerGeneric = NULL;
-    m_timePicker = NULL;
+    m_timePickerGeneric = nullptr;
+    m_timePicker = nullptr;
 
     wxFrame *frame = (wxFrame *)wxGetTopLevelParent(parent);
     if ( frame && frame->GetMenuBar()->IsChecked(Calendar_TimePicker_Generic) )

@@ -2,7 +2,6 @@
 // Name:        src/osx/cocoa/notebook.mm
 // Purpose:     implementation of wxNotebook
 // Author:      Stefan Csomor
-// Modified by:
 // Created:     1998-01-01
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
@@ -194,7 +193,7 @@ public:
     {
     }
 
-    void GetContentArea( int &left , int &top , int &width , int &height ) const wxOVERRIDE
+    void GetContentArea( int &left , int &top , int &width , int &height ) const override
     {
         wxNSTabView* slf = (wxNSTabView*) m_osxView;
         NSRect r = [slf contentRect];
@@ -204,7 +203,7 @@ public:
         height = (int)r.size.height;
     }
 
-    void SetValue( wxInt32 value ) wxOVERRIDE
+    void SetValue( wxInt32 value ) override
     {
         wxNSTabView* slf = (wxNSTabView*) m_osxView;
         // avoid 'changed' events when setting the tab programmatically
@@ -215,7 +214,7 @@ public:
         [slf setDelegate:controller];
     }
 
-    wxInt32 GetValue() const wxOVERRIDE
+    wxInt32 GetValue() const override
     {
         wxNSTabView* slf = (wxNSTabView*) m_osxView;
         NSTabViewItem* selectedItem = [slf selectedTabViewItem];
@@ -225,7 +224,7 @@ public:
             return [slf indexOfTabViewItem:selectedItem]+1;
     }
 
-    void SetupTabs( const wxNotebook& notebook) wxOVERRIDE
+    void SetupTabs( const wxNotebook& notebook) override
     {
         wxNSTabView* slf = (wxNSTabView*) m_osxView;
         int cocoacount = [slf numberOfTabViewItems ];
@@ -237,18 +236,9 @@ public:
         const int maximum = notebook.GetPageCount();
         for ( int i = 0; i < wxMin(maximum, cocoacount); ++i )
         {
-            NSTabViewItem* item = [(wxNSTabView*) m_osxView tabViewItemAtIndex:i];
+            SetupTabItem(notebook, i,
+                         [(wxNSTabView*) m_osxView tabViewItemAtIndex:i]);
 
-            wxNotebookPage* page = notebook.GetPage(i);
-            [item setView:page->GetHandle() ];
-            wxCFStringRef cf( page->GetLabel() );
-            [item setLabel:cf.AsNSString()];
-
-            const wxBitmapBundle bitmap = notebook.GetPageBitmapBundle(i);
-            if ( bitmap.IsOk() )
-            {
-                [(WXCTabViewImageItem*) item setImage: wxOSXGetImageFromBundle(bitmap)];
-            }
         }
 
         // Next also add new pages or delete the no more existing ones.
@@ -257,17 +247,7 @@ public:
             for ( int i = cocoacount ; i < maximum ; ++i )
             {
                 NSTabViewItem* item = [[WXCTabViewImageItem alloc] init];
-
-                wxNotebookPage* page = notebook.GetPage(i);
-                [item setView:page->GetHandle() ];
-                wxCFStringRef cf( page->GetLabel() );
-                [item setLabel:cf.AsNSString()];
-
-                const wxBitmapBundle bitmap = notebook.GetPageBitmapBundle(i);
-                if ( bitmap.IsOk() )
-                {
-                    [(WXCTabViewImageItem*) item setImage: wxOSXGetImageFromBundle(bitmap)];
-                }
+                SetupTabItem(notebook, i, item);
 
                 [slf addTabViewItem:item];
                 [item release];
@@ -284,7 +264,7 @@ public:
         [slf setDelegate:controller];
     }
 
-    int TabHitTest(const wxPoint & pt, long* flags) wxOVERRIDE
+    int TabHitTest(const wxPoint & pt, long* flags) override
     {
         int retval = wxNOT_FOUND;
         
@@ -304,6 +284,21 @@ public:
         }
         
         return retval; 
+    }
+
+private:
+    void SetupTabItem(const wxNotebook& notebook, int i, NSTabViewItem* item)
+    {
+        wxNotebookPage* page = notebook.GetPage(i);
+        [item setView:page->GetHandle() ];
+        wxCFStringRef cf( wxControl::RemoveMnemonics(notebook.GetPageText(i)) );
+        [item setLabel:cf.AsNSString()];
+
+        const wxBitmapBundle bitmap = notebook.GetPageBitmapBundle(i);
+        if ( bitmap.IsOk() )
+        {
+            [(WXCTabViewImageItem*) item setImage: wxOSXGetImageFromBundle(bitmap)];
+        }
     }
 };
 
@@ -344,7 +339,7 @@ public:
     m_peer = new wxMacControl( this );
     OSStatus err = CreateTabsControl(
         MAC_WXHWND(parent->MacGetTopLevelWindowRef()), &bounds,
-        tabsize, tabstyle, 0, NULL, GetPeer()->GetControlRefAddr() );
+        tabsize, tabstyle, 0, nullptr, GetPeer()->GetControlRefAddr() );
     verify_noerr( err );
 #endif
 */
@@ -356,7 +351,7 @@ wxWidgetImplType* wxWidgetImpl::CreateTabView( wxWindowMac* wxpeer,
                                     long style,
                                     long WXUNUSED(extraStyle))
 {
-    static wxTabViewController* controller = NULL;
+    static wxTabViewController* controller = nullptr;
 
     if ( !controller )
         controller =[[wxTabViewController alloc] init];

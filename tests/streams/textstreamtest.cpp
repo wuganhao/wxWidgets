@@ -20,13 +20,9 @@
 #include "wx/txtstrm.h"
 #include "wx/wfstream.h"
 
-#if wxUSE_LONGLONG
-    #include "wx/longlong.h"
-#endif
+#include "wx/longlong.h"
 
-#if wxUSE_UNICODE
-    #include "wx/mstream.h"
-#endif // wxUSE_UNICODE
+#include "wx/mstream.h"
 
 #include "testfile.h"
 
@@ -44,29 +40,22 @@ private:
         CPPUNIT_TEST( Endline );
         CPPUNIT_TEST( MiscTests );
 
-#if wxUSE_LONGLONG
         CPPUNIT_TEST( TestLongLong );
         CPPUNIT_TEST( TestULongLong );
-#endif // wxUSE_LONGLONG
 
-#if wxUSE_UNICODE
         CPPUNIT_TEST( TestUTF8Input );
         CPPUNIT_TEST( TestEmbeddedZerosUTF16LEInput );
         CPPUNIT_TEST( TestEmbeddedZerosUTF16BEInput );
         CPPUNIT_TEST( TestEmbeddedZerosUTF32LEInput );
         CPPUNIT_TEST( TestEmbeddedZerosUTF32BEInput );
-#endif // wxUSE_UNICODE
     CPPUNIT_TEST_SUITE_END();
 
     void Endline();
     void MiscTests();
 
-#if wxUSE_LONGLONG
     void TestLongLong();
     void TestULongLong();
-#endif // wxUSE_LONGLONG
 
-#if wxUSE_UNICODE
     void TestUTF8Input();
     void TestEmbeddedZerosUTF16LEInput();
     void TestEmbeddedZerosUTF16BEInput();
@@ -75,8 +64,6 @@ private:
     void TestInput(const wxMBConv& conv,
                    const void* encodedText,
                    size_t encodedSize );
-#endif // wxUSE_UNICODE
-
 
     wxDECLARE_NO_COPY_CLASS(TextStreamTestCase);
 };
@@ -140,8 +127,6 @@ void TextStreamTestCase::MiscTests()
     CPPUNIT_ASSERT_EQUAL("path=$PATH", tis.ReadLine());
 }
 
-#if wxUSE_LONGLONG
-
 template <typename T>
 static void DoTestRoundTrip(const T *values, size_t numValues)
 {
@@ -199,10 +184,6 @@ void TextStreamTestCase::TestULongLong()
 
     DoTestRoundTrip(ullvalues, WXSIZEOF(ullvalues));
 }
-
-#endif // wxUSE_LONGLONG
-
-#if wxUSE_UNICODE
 
 static const wchar_t txtWchar[4] =
 {
@@ -362,5 +343,3 @@ TEST_CASE("wxTextInputStream::GetChar", "[text][input][stream][char]")
         CHECK( tis.GetInputStream().Eof() );
     }
 }
-
-#endif // wxUSE_UNICODE

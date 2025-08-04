@@ -33,11 +33,9 @@ public:
                 long style = 0,
                 const wxString &name = wxASCII_STR(wxStaticTextNameStr) );
 
-    virtual ~wxStaticText();
+    void SetLabel( const wxString &label ) override;
 
-    void SetLabel( const wxString &label ) wxOVERRIDE;
-
-    bool SetFont( const wxFont &font ) wxOVERRIDE;
+    bool SetFont( const wxFont &font ) override;
 
     static wxVisualAttributes
     GetClassDefaultAttributes(wxWindowVariant variant = wxWINDOW_VARIANT_NORMAL);
@@ -46,15 +44,15 @@ public:
     // --------------
 
 protected:
-    virtual bool GTKWidgetNeedsMnemonic() const wxOVERRIDE;
-    virtual void GTKWidgetDoSetMnemonic(GtkWidget* w) wxOVERRIDE;
+    virtual bool GTKWidgetNeedsMnemonic() const override;
+    virtual void GTKWidgetDoSetMnemonic(GtkWidget* w) override;
 
-    virtual wxSize DoGetBestSize() const wxOVERRIDE;
+    virtual wxSize DoGetBestSize() const override;
 
-    virtual wxString WXGetVisibleLabel() const wxOVERRIDE;
-    virtual void WXSetVisibleLabel(const wxString& str) wxOVERRIDE;
+    virtual wxString WXGetVisibleLabel() const override;
+    virtual void WXSetVisibleLabel(const wxString& str) override;
 #if wxUSE_MARKUP
-    virtual bool DoSetLabelMarkup(const wxString& markup) wxOVERRIDE;
+    virtual bool DoSetLabelMarkup(const wxString& markup) override;
 #endif // wxUSE_MARKUP
 
 private:
@@ -63,6 +61,9 @@ private:
 
     void GTKDoSetLabel(GTKLabelSetter setter, const wxString& label);
 
+    // If our font has been changed, we compute the best size ourselves because
+    // GTK doesn't always do it correctly, see DoGetBestSize().
+    bool m_computeOurOwnBestSize = false;
 
     wxDECLARE_DYNAMIC_CLASS(wxStaticText);
 };

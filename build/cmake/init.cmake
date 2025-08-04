@@ -8,6 +8,32 @@
 # Licence:     wxWindows licence
 #############################################################################
 
+function(checkCompilerDefaults)
+    include(CheckCXXSourceCompiles)
+    check_cxx_source_compiles("
+        #include <vector>
+        int main() {
+            std::vector<int> v{1,2,3};
+            for (auto& n : v)
+                --n;
+            return v[0];
+        }"
+        wxHAVE_CXX11)
+
+    check_cxx_source_compiles("
+        #if defined(_MSVC_LANG)
+            #if _MSVC_LANG < 201703L
+                #error C++17 support is required
+            #endif
+        #elif __cplusplus < 201703L
+            #error C++17 support is required
+        #endif
+        int main() {
+            [[maybe_unused]] auto unused = 17;
+        }"
+        wxHAVE_CXX17)
+endfunction()
+
 if(DEFINED CMAKE_CXX_STANDARD)
     # User has explicitly set a CMAKE_CXX_STANDARD.
 elseif(DEFINED wxBUILD_CXX_STANDARD AND NOT wxBUILD_CXX_STANDARD STREQUAL COMPILER_DEFAULT)
@@ -16,6 +42,13 @@ elseif(DEFINED wxBUILD_CXX_STANDARD AND NOT wxBUILD_CXX_STANDARD STREQUAL COMPIL
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
 else()
     # CMAKE_CXX_STANDARD not defined.
+    checkCompilerDefaults()
+    if(NOT wxHAVE_CXX11)
+        # If the standard is not set explicitly, and the default compiler settings
+        # do not support c++11, request it explicitly.
+        set(CMAKE_CXX_STANDARD 11)
+        set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    endif()
 endif()
 
 if(MSVC)
@@ -111,21 +144,14 @@ elseif(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_CXX_COMPILER_ID}
     endif()
 endif()
 
-if(wxBUILD_COMPATIBILITY VERSION_LESS 3.0)
-    set(WXWIN_COMPATIBILITY_2_8 ON)
-endif()
-if(wxBUILD_COMPATIBILITY VERSION_LESS 3.1)
-    set(WXWIN_COMPATIBILITY_3_0 ON)
-endif()
-
+if(NOT wxBUILD_COMPATIBILITY STREQUAL "NONE")
+    set(WXWIN_COMPATIBILITY_3_2 ON)
+    if(wxBUILD_COMPATIBILITY VERSION_LESS 3.2)
+        set(WXWIN_COMPATIBILITY_3_0 ON)
 # Build wxBUILD_FILE_ID used for config and setup path
 #TODO: build different id for WIN32
 set(wxBUILD_FILE_ID "${wxBUILD_TOOLKIT}${wxBUILD_WIDGETSET}-")
-if(wxUSE_UNICODE)
-    wx_string_append(wxBUILD_FILE_ID "unicode")
-else()
-    wx_string_append(wxBUILD_FILE_ID "ansi")
-endif()
+wx_string_append(wxBUILD_FILE_ID "unicode")
 if(NOT wxBUILD_SHARED)
     wx_string_append(wxBUILD_FILE_ID "-static")
 endif()
@@ -187,11 +213,7 @@ if(wxBUILD_CUSTOM_SETUP_HEADER_PATH)
 else()
     # Set path where setup.h will be created
     if(WIN32_MSVC_NAMING)
-        if(wxUSE_UNICODE)
-            set(lib_unicode u)
-        else()
-            set(lib_unicode)
-        endif()
+        set(lib_unicode u)
         set(wxSETUP_HEADER_PATH
             ${wxOUTPUT_DIR}/${wxPLATFORM_LIB_DIR}/${wxBUILD_TOOLKIT}${lib_unicode})
         file(MAKE_DIRECTORY ${wxSETUP_HEADER_PATH}/wx)
@@ -218,7 +240,6 @@ if(NOT wxBUILD_DEBUG_LEVEL STREQUAL "Default")
 endif()
 
 # Constants for setup.h creation
-set(wxUSE_STD_DEFAULT ON)
 if(NOT wxUSE_EXPAT)
     set(wxUSE_XRC OFF)
 endif()
@@ -317,7 +338,14 @@ if(wxUSE_INTL AND NOT wxUSE_FILE)
 endif()
 
 if(wxUSE_THREADS)
-    find_package(Threads REQUIRED)
+    if(ANDROID)
+        # Android has pthreads but FindThreads fails due to missing pthread_cancel
+        set(CMAKE_USE_PTHREADS_INIT 1)
+        set(CMAKE_THREAD_LIBS_INIT "")
+        set(Threads_FOUND TRUE)
+    else()
+        find_package(Threads REQUIRED)
+    endif()
 endif()
 
 if(wxUSE_LIBLZMA)
@@ -393,11 +421,7 @@ if(wxUSE_GUI)
         endif()
     endif()
      if(MSVC) # match setup.h
-        if(MSVC_VERSION LESS 1600)
-            wx_option_force_value(wxUSE_GRAPHICS_DIRECT2D OFF)
-        else()
-            wx_option_force_value(wxUSE_GRAPHICS_DIRECT2D ${wxUSE_GRAPHICS_CONTEXT})
-        endif()
+        wx_option_force_value(wxUSE_GRAPHICS_DIRECT2D ${wxUSE_GRAPHICS_CONTEXT})
      endif()
 
     # WXQT checks
@@ -433,11 +457,12 @@ if(wxUSE_GUI)
     if(wxUSE_OPENGL)
         if(WXOSX_IPHONE)
             set(OPENGL_FOUND TRUE)
+            set(OPENGL_INCLUDE_DIR "")
             set(OPENGL_LIBRARIES "-framework OpenGLES" "-framework QuartzCore" "-framework GLKit")
         else()
             find_package(OpenGL)
             if(OPENGL_FOUND)
-                foreach(gltarget OpenGL::GL OpenGL::GLU OpenGL::OpenGL)
+                foreach(gltarget OpenGL::GL OpenGL::OpenGL)
                     if(TARGET ${gltarget})
                         set(OPENGL_LIBRARIES ${gltarget} ${OPENGL_LIBRARIES})
                     endif()
@@ -493,22 +518,75 @@ if(wxUSE_GUI)
                 set(wxUSE_WEBVIEW_WEBKIT ON)
             elseif(WEBKIT2_FOUND AND LIBSOUP_FOUND)
                 set(wxUSE_WEBVIEW_WEBKIT2 ON)
-            else()
-                message(WARNING "webkit not found or enabled, wxWebview won't be available")
-                wx_option_force_value(wxUSE_WEBVIEW OFF)
-            endif()
-        elseif(WXMSW)
-            if(NOT wxUSE_WEBVIEW_IE AND NOT wxUSE_WEBVIEW_EDGE)
-                message(WARNING "WebviewIE and WebviewEdge not found or enabled, wxWebview won't be available")
+            elseif(NOT wxUSE_WEBVIEW_CHROMIUM)
+                message(WARNING "webkit or chromium not found or enabled, wxWebview won't be available")
                 wx_option_force_value(wxUSE_WEBVIEW OFF)
             endif()
         elseif(APPLE)
-            if(NOT wxUSE_WEBVIEW_WEBKIT)
-                message(WARNING "webkit not found or enabled, wxWebview won't be available")
+            if(NOT wxUSE_WEBVIEW_WEBKIT AND NOT wxUSE_WEBVIEW_CHROMIUM)
+                message(WARNING "webkit and chromium not found or enabled, wxWebview won't be available")
                 wx_option_force_value(wxUSE_WEBVIEW OFF)
+            endif()
+        else()
+            set(wxUSE_WEBVIEW_WEBKIT OFF)
+        endif()
+
+        if(WXMSW AND NOT wxUSE_WEBVIEW_IE AND NOT wxUSE_WEBVIEW_EDGE AND NOT wxUSE_WEBVIEW_CHROMIUM)
+            message(WARNING "WebviewIE and WebviewEdge and WebviewChromium not found or enabled, wxWebview won't be available")
+            wx_option_force_value(wxUSE_WEBVIEW OFF)
+        endif()
+
+        if(wxUSE_WEBVIEW_CHROMIUM AND WIN32 AND NOT MSVC)
+            message(FATAL_ERROR "WebviewChromium libcef_dll_wrapper can only be built with MSVC")
+        endif()
+
+        if(wxUSE_WEBVIEW_CHROMIUM)
+            # CEF requires C++17: we trust CMAKE_CXX_STANDARD if it is defined,
+            # or the previously tested wxHAVE_CXX17 if the compiler supports C++17 anyway.
+            if(NOT (CMAKE_CXX_STANDARD GREATER_EQUAL 17 OR wxHAVE_CXX17))
+                # We shouldn't disable this option as it's disabled by default and
+                # if it is on, it means that CEF is meant to be used, but we can't
+                # continue either as libcef_dll_wrapper will fail to build
+                # (actually it may still succeed with CEF v116 which provided
+                # its own stand-in for std::in_place used in CEF headers, but
+                # not with the later versions, so just fail instead of trying
+                # to detect CEF version here, as even v116 officially only
+                # supports C++17 anyhow).
+                if (DEFINED CMAKE_CXX_STANDARD)
+                    set(cxx17_error_details "configured to use C++${CMAKE_CXX_STANDARD}")
+                else()
+                    set(cxx17_error_details "the compiler doesn't support C++17 by default and CMAKE_CXX_STANDARD is not set")
+                endif()
+                message(FATAL_ERROR "WebviewChromium requires at least C++17 but ${cxx17_error_details}")
             endif()
         endif()
     endif()
+
+    set(wxWebviewInfo "enable wxWebview")
+    if(wxUSE_WEBVIEW)
+        if(wxUSE_WEBVIEW_WEBKIT)
+            list(APPEND webviewBackends "WebKit")
+        endif()
+        if(wxUSE_WEBVIEW_WEBKIT2)
+            list(APPEND webviewBackends "WebKit2")
+        endif()
+        if(wxUSE_WEBVIEW_EDGE)
+            if(wxUSE_WEBVIEW_EDGE_STATIC)
+                list(APPEND webviewBackends "Edge (static)")
+            else()
+                list(APPEND webviewBackends "Edge")
+            endif()
+        endif()
+        if(wxUSE_WEBVIEW_IE)
+            list(APPEND webviewBackends "IE")
+        endif()
+        if(wxUSE_WEBVIEW_CHROMIUM)
+            list(APPEND webviewBackends "Chromium")
+        endif()
+        string(REPLACE ";" ", " webviewBackends "${webviewBackends}")
+        set(wxWebviewInfo "${wxWebviewInfo} with ${webviewBackends}")
+    endif()
+    set(wxTHIRD_PARTY_LIBRARIES ${wxTHIRD_PARTY_LIBRARIES} wxUSE_WEBVIEW ${wxWebviewInfo})
 
     if(wxUSE_PRIVATE_FONTS AND WXGTK)
         find_package(FONTCONFIG)
@@ -703,5 +781,7 @@ if((wxBUILD_PRECOMP STREQUAL "ON" AND CMAKE_VERSION VERSION_LESS "3.16") OR (wxB
     if(NOT RESULT_VAR)
         message(WARNING "precompiled header (PCH) test failed, it will be turned off")
         wx_option_force_value(wxBUILD_PRECOMP OFF)
+    else()
+        set(USE_COTIRE ON)
     endif()
 endif()

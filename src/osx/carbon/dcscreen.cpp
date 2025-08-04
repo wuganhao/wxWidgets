@@ -2,7 +2,6 @@
 // Name:        src/osx/carbon/dcscreen.cpp
 // Purpose:     wxScreenDC class
 // Author:      Stefan Csomor
-// Modified by:
 // Created:     1998-01-01
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
@@ -69,7 +68,7 @@ wxBitmap wxScreenDCImpl::DoGetAsBitmap(const wxRect *subrect) const
     if ( subrect )
         srcRect = CGRectOffset( srcRect, -subrect->x, -subrect->y ) ;
 
-    CGImageRef image = NULL;
+    CGImageRef image = nullptr;
 
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
     if ( WX_IS_MACOS_AVAILABLE(14, 4) ) // errors on lower versions of macOS 14
@@ -84,7 +83,7 @@ wxBitmap wxScreenDCImpl::DoGetAsBitmap(const wxRect *subrect) const
 #endif
     }
 
-    if ( image != NULL )
+    if ( image != nullptr )
     {
         CGContextDrawImage(context, srcRect, image);
         CGImageRelease(image);

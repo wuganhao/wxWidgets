@@ -28,7 +28,7 @@ namespace
 class HardBreakWrapper : public wxTextWrapper
 {
 public:
-    HardBreakWrapper() { }
+    HardBreakWrapper() = default;
 
     // Return the window used for wrapping: for now, use the main frame because
     // it doesn't really matter which one we use.
@@ -61,7 +61,7 @@ public:
     wxString GetResult() const { return wxJoin(m_lines, '\n'); }
 
 protected:
-    void OnOutputLine(const wxString& line) wxOVERRIDE { m_lines.push_back(line); }
+    void OnOutputLine(const wxString& line) override { m_lines.push_back(line); }
 
 private:
     wxArrayString m_lines;
@@ -99,14 +99,14 @@ TEST_CASE("wxTextWrapper::Wrap", "[text]")
     // Check that wrapping the text using reasonable width works.
     SECTION("Normal")
     {
-        const size_t n = w.Do(text, 40*w.GetExtent("x"));
+        const auto n = w.Do(text, 40*w.GetExtent("x"));
         INFO("Wrapped text:\n" << w.GetResult() << "\n");
         CHECK( n >= 3 );
     }
 
     SECTION("Narrow")
     {
-        const size_t n = w.Do(text, w.GetExtent("Lorum ipsum dolor"));
+        const auto n = w.Do(text, w.GetExtent("Lorum ipsum dolor"));
         INFO("Wrapped text:\n" << w.GetResult() << "\n");
         CHECK( n >= 8 );
         CHECK( w.GetLine(0) == "Lorem ipsum dolor" );
@@ -116,7 +116,7 @@ TEST_CASE("wxTextWrapper::Wrap", "[text]")
     // the text is still wrapped reasonableness well.
     SECTION("Thin")
     {
-        const size_t n = w.Do(text, w.GetExtent("Lorum"));
+        const auto n = w.Do(text, w.GetExtent("Lorum"));
         INFO("Wrapped text:\n" << w.GetResult() << "\n");
         CHECK( n > 10 );
         CHECK( w.GetLine(0) == "Lorem" );
@@ -140,10 +140,30 @@ TEST_CASE("wxTextWrapper::Wrap", "[text]")
     // wrapped text has one word per line.
     SECTION("Narrowest")
     {
-        const size_t n = w.Do(text, 1);
+        const auto n = w.Do(text, 1);
         INFO("Wrapped text:\n" << w.GetResult() << "\n");
         REQUIRE( n == static_cast<size_t>(text.Freq(' ')) + 1 );
         CHECK( w.GetLine(0) == "Lorem" );
         CHECK( w.GetLine(5) == "consectetur" );
     }
+}
+
+// This pseudo test is disabled by default as it requires the environment
+// variables WX_TEST_TEXT_WRAP WX_TEST_TEXT_WIDTH to be defined to test how the
+// given text is wrapped.
+TEST_CASE("wxTextWrapper::Manual", "[.]")
+{
+    wxString text;
+    REQUIRE( wxGetEnv("WX_TEST_TEXT_WRAP", &text) );
+
+    wxString widthStr;
+    REQUIRE( wxGetEnv("WX_TEST_TEXT_WIDTH", &widthStr) );
+
+    int width;
+    REQUIRE( widthStr.ToInt(&width) );
+
+    HardBreakWrapper w;
+    const size_t n = w.Do(text, width);
+    WARN("Text wrapped at " << width << " takes " << n << " lines:\n\n"
+         << w.GetResult() << "\n");
 }

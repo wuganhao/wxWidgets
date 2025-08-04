@@ -28,17 +28,17 @@ class BitmapComboBoxTestCase : public TextEntryTestCase,
 public:
     BitmapComboBoxTestCase() { }
 
-    virtual void setUp() wxOVERRIDE;
-    virtual void tearDown() wxOVERRIDE;
+    virtual void setUp() override;
+    virtual void tearDown() override;
 
 private:
-    virtual wxTextEntry *GetTestEntry() const wxOVERRIDE { return m_combo; }
-    virtual wxWindow *GetTestWindow() const wxOVERRIDE { return m_combo; }
+    virtual wxTextEntry *GetTestEntry() const override { return m_combo; }
+    virtual wxWindow *GetTestWindow() const override { return m_combo; }
 
-    virtual wxItemContainer *GetContainer() const wxOVERRIDE { return m_combo; }
-    virtual wxWindow *GetContainerWindow() const wxOVERRIDE { return m_combo; }
+    virtual wxItemContainer *GetContainer() const override { return m_combo; }
+    virtual wxWindow *GetContainerWindow() const override { return m_combo; }
 
-    virtual void CheckStringSelection(const char * WXUNUSED(sel)) wxOVERRIDE
+    virtual void CheckStringSelection(const char * WXUNUSED(sel)) override
     {
         // do nothing here, as explained in TextEntryTestCase comment, our
         // GetStringSelection() is the wxChoice, not wxTextEntry, one and there
@@ -83,7 +83,7 @@ void BitmapComboBoxTestCase::Bitmap()
     CPPUNIT_ASSERT(!m_combo->GetItemBitmap(0).IsOk());
 
     wxBitmap bitmap = wxArtProvider::GetIcon(wxART_INFORMATION, wxART_OTHER,
-                                             wxSize(16, 16));
+                                             m_combo->FromDIP(wxSize(16, 16)));
 
     m_combo->Append("item with bitmap", bitmap);
 
@@ -97,7 +97,7 @@ void BitmapComboBoxTestCase::Bitmap()
 
     CPPUNIT_ASSERT(m_combo->GetItemBitmap(0).IsOk());
 
-    CPPUNIT_ASSERT_EQUAL(wxSize(16, 16), m_combo->GetBitmapSize());
+    CPPUNIT_ASSERT_EQUAL(m_combo->FromDIP(wxSize(16, 16)), m_combo->GetBitmapSize());
 
     m_combo->SetSelection( 1 );
 

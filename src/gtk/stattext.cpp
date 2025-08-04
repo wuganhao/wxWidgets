@@ -23,22 +23,6 @@
 
 #include "wx/gtk/private.h"
 
-// We can't add a member variable to wxStaticText in 3.2 branch, so emulate it
-// by encoding the corresponding boolean value via the presence of "this"
-// pointer in the given hash set.
-#include "wx/hashset.h"
-
-namespace
-{
-
-// Define the equivalent of unordered_set<wxStaticText*>.
-WX_DECLARE_HASH_SET(wxStaticText*, wxPointerHash, wxPointerEqual, wxStaticTextSet);
-
-// Use it to remember for which objects we need to compute the size ourselves.
-wxStaticTextSet gs_computeOurOwnBestSize;
-
-} // anonymous namespace
-
 //-----------------------------------------------------------------------------
 // wxStaticText
 //-----------------------------------------------------------------------------
@@ -73,7 +57,7 @@ bool wxStaticText::Create(wxWindow *parent,
         return false;
     }
 
-    m_widget = gtk_label_new(NULL);
+    m_widget = gtk_label_new(nullptr);
     g_object_ref(m_widget);
 
     GtkJustification justify;
@@ -132,7 +116,7 @@ bool wxStaticText::Create(wxWindow *parent,
     // GTK_JUSTIFY_LEFT is 0, RIGHT 1 and CENTER 2
     static const float labelAlignments[] = { 0.0, 1.0, 0.5 };
 #ifdef __WXGTK4__
-    g_object_set(m_widget, "xalign", labelAlignments[justify], NULL);
+    g_object_set(m_widget, "xalign", labelAlignments[justify], nullptr);
 #else
     wxGCC_WARNING_SUPPRESS(deprecated-declarations)
     gtk_misc_set_alignment(GTK_MISC(m_widget), labelAlignments[justify], 0.0);
@@ -157,14 +141,9 @@ bool wxStaticText::Create(wxWindow *parent,
     return true;
 }
 
-wxStaticText::~wxStaticText()
-{
-    gs_computeOurOwnBestSize.erase(this);
-}
-
 void wxStaticText::GTKDoSetLabel(GTKLabelSetter setter, const wxString& label)
 {
-    wxCHECK_RET( m_widget != NULL, wxT("invalid static text") );
+    wxCHECK_RET( m_widget != nullptr, wxT("invalid static text") );
 
     (this->*setter)(GTK_LABEL(m_widget), label);
 
@@ -211,7 +190,7 @@ bool wxStaticText::SetFont( const wxFont &font )
         // Setting the font of a hidden window doesn't update GTK style cache,
         // see #16088, and the size computed by GTK will be wrong, so we will
         // need to compute it ourselves.
-        gs_computeOurOwnBestSize.insert(this);
+        m_computeOurOwnBestSize = true;
     }
 
     const bool isUnderlined = GetFont().GetUnderlined();
@@ -246,7 +225,7 @@ bool wxStaticText::SetFont( const wxFont &font )
         else // No special attributes any more.
         {
             // Just remove any attributes we had set.
-            gtk_label_set_attributes(GTK_LABEL(m_widget), NULL);
+            gtk_label_set_attributes(GTK_LABEL(m_widget), nullptr);
         }
 
         // The underlines for mnemonics are incompatible with using attributes
@@ -265,12 +244,12 @@ wxSize wxStaticText::DoGetBestSize() const
     wxASSERT_MSG( m_widget, wxT("wxStaticText::DoGetBestSize called before creation") );
 
     wxSize size;
-    if ( gs_computeOurOwnBestSize.count(wxConstCast(this, wxStaticText)) )
+    if ( m_computeOurOwnBestSize )
     {
         // GTK style cache may not be up to date, so we can't trust the results
         // of wxControl::DoGetBestSize() and need to compute the best size
         // ourselves here.
-        wxClientDC dc(wxConstCast(this, wxStaticText));
+        wxInfoDC dc(wxConstCast(this, wxStaticText));
 
         const wxString
             label = wxString::FromUTF8(gtk_label_get_label(GTK_LABEL(m_widget)));

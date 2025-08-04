@@ -116,16 +116,16 @@ ImageListTestCase::ImageListTestCase()
     REQUIRE(ico.IsOk());
 
     REQUIRE(bmpRGB.HasAlpha() == false);
-    REQUIRE(bmpRGB.GetMask() == NULL);
+    REQUIRE(bmpRGB.GetMask() == nullptr);
 
     REQUIRE(bmpRGBWithMask.HasAlpha() == false);
-    REQUIRE(bmpRGBWithMask.GetMask() != NULL);
+    REQUIRE(bmpRGBWithMask.GetMask() != nullptr);
 
     REQUIRE(bmpRGBA.HasAlpha() == true);
-    REQUIRE(bmpRGBA.GetMask() == NULL);
+    REQUIRE(bmpRGBA.GetMask() == nullptr);
 
     REQUIRE(bmpRGBAWithMask.HasAlpha() == true);
-    REQUIRE(bmpRGBAWithMask.GetMask() != NULL);
+    REQUIRE(bmpRGBAWithMask.GetMask() != nullptr);
 }
 
 // ----------------------------------------------------------------------------
@@ -480,7 +480,7 @@ TEST_CASE_METHOD(ImageListTestCase,
         CHECK(il.GetImageCount() == 1);
         wxBitmap bmp1 = il.GetBitmap(idx);
         CHECK(bmp1.HasAlpha() == false);
-        CHECK(bmp1.GetMask() == NULL);
+        CHECK(bmp1.GetMask() == nullptr);
         CHECK(bmp1.GetSize() == BITMAP_SIZE);
 
         idx = il.Add(bmpRGBWithMask);
@@ -503,7 +503,7 @@ TEST_CASE_METHOD(ImageListTestCase,
         CHECK(il.GetImageCount() == 1);
         wxBitmap bmp1 = il.GetBitmap(idx);
         CHECK(bmp1.HasAlpha() == true);
-        CHECK(bmp1.GetMask() == NULL);
+        CHECK(bmp1.GetMask() == nullptr);
         CHECK(bmp1.GetSize() == BITMAP_SIZE);
 
         idx = il.Add(bmpRGBAWithMask);
@@ -541,7 +541,7 @@ TEST_CASE_METHOD(ImageListTestCase,
 
         wxBitmap bmp1 = il.GetBitmap(idx1);
         CHECK(bmp1.HasAlpha() == false);
-        CHECK(bmp1.GetMask() == NULL);
+        CHECK(bmp1.GetMask() == nullptr);
         CHECK(bmp1.GetSize() == BITMAP_SIZE);
 
         wxBitmap bmp2 = il.GetBitmap(idx2);
@@ -562,12 +562,20 @@ TEST_CASE_METHOD(ImageListTestCase,
 
         wxBitmap bmp1 = il.GetBitmap(idx1);
         CHECK(bmp1.HasAlpha() == true);
-        CHECK(bmp1.GetMask() == NULL);
+        CHECK(bmp1.GetMask() == nullptr);
         CHECK(bmp1.GetSize() == BITMAP_SIZE);
 
         wxBitmap bmp2 = il.GetBitmap(idx2);
         CHECK(HasMaskOrAlpha(bmp2));
         CHECK(bmp2.GetSize() == BITMAP_SIZE);
+    }
+
+    SECTION("Add 2x width image")
+    {
+        il.RemoveAll();
+        int idx = il.Add(wxBitmap(BITMAP_SIZE.x * 2, BITMAP_SIZE.y));
+        CHECK(idx == 0);
+        CHECK(il.GetImageCount() == 2);
     }
 }
 
@@ -609,11 +617,11 @@ TEST_CASE("ImageList:NegativeTests", "[imagelist][negative]")
         CHECK(h == 0);
 #endif
 
-        int idx = il.Add(bmp);
-        CHECK(idx == -1);
 #ifdef __WXDEBUG__
+        CHECK_THROWS(il.Add(bmp));
         REQUIRE_THROWS(il.GetImageCount());
 #else
+        CHECK(il.Add(bmp) == -1);
         CHECK(il.GetImageCount() == 0);
 #endif
     }
@@ -644,20 +652,30 @@ TEST_CASE("ImageList:NegativeTests", "[imagelist][negative]")
         CHECK(h == 0);
 #endif
 
-        int idx = il.Add(bmp);
-        CHECK(idx == -1);
 #ifdef __WXDEBUG__
+        CHECK_THROWS(il.Add(bmp));
         REQUIRE_THROWS(il.GetImageCount());
 #else
+        CHECK(il.Add(bmp) == -1);
         CHECK(il.GetImageCount() == 0);
 #endif
 
-        ok = il.Replace(0, bmp);
-        CHECK_FALSE(ok);
 #ifdef __WXDEBUG__
+        CHECK_THROWS(il.Replace(0, bmp));
         REQUIRE_THROWS(il.GetImageCount());
 #else
+        CHECK_FALSE(il.Replace(0, bmp));
         CHECK(il.GetImageCount() == 0);
+#endif
+    }
+
+    SECTION("Add to invalid image list")
+    {
+        wxImageList il;
+#ifdef __WXDEBUG__
+        CHECK_THROWS( il.Add(bmp) );
+#else
+        CHECK( il.Add(bmp) == -1 );
 #endif
     }
 
@@ -733,14 +751,14 @@ TEST_CASE("ImageList:HiDPI", "[imagelist][hidpi]")
     CHECK(bmp1x.GetSize() == wxSize(8, 4));
     CHECK(bmp1x.GetLogicalSize() == wxSize(8, 4));
     CHECK_FALSE(bmp1x.HasAlpha());
-    CHECK(bmp1x.GetMask() == NULL);
+    CHECK(bmp1x.GetMask() == nullptr);
 
     wxBitmap bmp2x(img2, -1, 2.0);
     REQUIRE(bmp2x.IsOk());
     CHECK(bmp2x.GetSize() == wxSize(16, 8));
     CHECK(bmp2x.GetLogicalSize() == wxSize(8, 4));
     CHECK_FALSE(bmp2x.HasAlpha());
-    CHECK(bmp2x.GetMask() == NULL);
+    CHECK(bmp2x.GetMask() == nullptr);
 
     // Logical image size
     wxImageList il(8, 4, false);
@@ -759,7 +777,7 @@ TEST_CASE("ImageList:HiDPI", "[imagelist][hidpi]")
     CHECK(bmp.GetSize() == wxSize(16, 8));
     CHECK(bmp.GetLogicalSize() == wxSize(8, 4));
     CHECK_FALSE(bmp.HasAlpha());
-    CHECK(bmp.GetMask() == NULL);
+    CHECK(bmp.GetMask() == nullptr);
 
     bmp = il.GetBitmap(1);
     REQUIRE(bmp.IsOk() == true);
@@ -767,6 +785,6 @@ TEST_CASE("ImageList:HiDPI", "[imagelist][hidpi]")
     CHECK(bmp.GetSize() == wxSize(8, 4));
     CHECK(bmp.GetLogicalSize() == wxSize(8, 4));
     CHECK_FALSE(bmp.HasAlpha());
-    CHECK(bmp.GetMask() == NULL);
+    CHECK(bmp.GetMask() == nullptr);
 }
 #endif // wxHAS_DPI_INDEPENDENT_PIXELS

@@ -59,7 +59,7 @@ bool wxGauge::Create( wxWindow *parent,
     PostCreation(size);
 #ifdef __WXGTK3__
     int wh = isVertical ? size.x : size.y;
-    if (wh > 0 && gtk_check_version(3,20,0) == NULL)
+    if (wh > 0 && gtk_check_version(3,20,0) == nullptr)
     {
         GtkCssProvider* provider = gtk_css_provider_new();
         const char* whStr = isVertical ? "width" : "height";
@@ -69,9 +69,9 @@ bool wxGauge::Create( wxWindow *parent,
 
         int min;
         if (isVertical)
-            gtk_widget_get_preferred_width(m_widget, &min, NULL);
+            gtk_widget_get_preferred_width(m_widget, &min, nullptr);
         else
-            gtk_widget_get_preferred_height(m_widget, &min, NULL);
+            gtk_widget_get_preferred_height(m_widget, &min, nullptr);
 
         // Adjust the min{width,height} to get the right overall size
         wh -= min - wh;

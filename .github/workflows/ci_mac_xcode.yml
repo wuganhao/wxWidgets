@@ -20,15 +20,11 @@ on:
     - 'include/msvc/**'
     - 'include/wx/dfb/**'
     - 'include/wx/gtk/**'
-    - 'include/wx/gtk1/**'
-    - 'include/wx/motif/**'
     - 'include/wx/msw/**'
     - 'include/wx/x11/**'
     - 'locale/**'
     - 'src/dfb/**'
     - 'src/gtk/**'
-    - 'src/gtk1/**'
-    - 'src/motif/**'
     - 'src/msw/**'
     - 'src/x11/**'
     - '*.md'
@@ -53,21 +49,21 @@ on:
     - 'include/msvc/**'
     - 'include/wx/dfb/**'
     - 'include/wx/gtk/**'
-    - 'include/wx/gtk1/**'
-    - 'include/wx/motif/**'
     - 'include/wx/msw/**'
     - 'include/wx/x11/**'
     - 'locale/**'
     - 'src/dfb/**'
     - 'src/gtk/**'
-    - 'src/gtk1/**'
-    - 'src/motif/**'
     - 'src/msw/**'
     - 'src/x11/**'
     - '*.md'
     - '*.yml'
     - 'CMakeLists.txt'
     - 'wxwidgets.props'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -90,7 +86,7 @@ jobs:
           runner: self-hosted
           scheme: 'app-dynamic'
           destination: 'generic/platform=macOS'
-          arch: x86_64
+          arch: arm64
           configuration: 'Release'
           project: samples/minimal/minimal_cocoa.xcodeproj
         - name: iOS static Debug
@@ -104,7 +100,7 @@ jobs:
           runner: macos-latest
           scheme: 'app-static'
           destination: 'generic/platform=iOS Simulator'
-          arch: x86_64
+          arch: arm64
           configuration: 'Release'
           project: samples/minimal/minimal_iphone.xcodeproj
 
@@ -114,7 +110,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         submodules: recursive
 

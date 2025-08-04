@@ -32,10 +32,10 @@
 class IntlTestCase : public CppUnit::TestCase
 {
 public:
-    IntlTestCase() { m_locale=NULL; }
+    IntlTestCase() { m_locale=nullptr; }
 
-    virtual void setUp() wxOVERRIDE;
-    virtual void tearDown() wxOVERRIDE;
+    virtual void setUp() override;
+    virtual void tearDown() override;
 
 private:
     CPPUNIT_TEST_SUITE( IntlTestCase );
@@ -71,7 +71,7 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( IntlTestCase, "IntlTestCase" );
 void IntlTestCase::setUp()
 {
     // Check that French locale is supported, this test doesn't work without it
-    // and all the other function need to check whether m_locale is non-NULL
+    // and all the other function need to check whether m_locale is non-null
     // before continuing
     if ( !wxLocale::IsAvailable(wxLANGUAGE_FRENCH) )
         return;
@@ -93,7 +93,7 @@ void IntlTestCase::tearDown()
     if (m_locale)
     {
         delete m_locale;
-        m_locale = NULL;
+        m_locale = nullptr;
     }
 }
 
@@ -213,6 +213,8 @@ void IntlTestCase::DateTimeFmtFrench()
     // its middle, so test it piece-wise and hope it doesn't change too much.
     CHECK( fmtDT.StartsWith("%A %d %B %Y") );
     CHECK( fmtDT.EndsWith("%H:%M:%S") );
+
+    wxUnusedVar(FRENCH_DATE_TIME_FMT);
 #else
     // Some glic versions have " %Z" at the end of the locale and some don't.
     // The test is still useful if we just ignore this difference.
@@ -230,12 +232,12 @@ void IntlTestCase::DateTimeFmtFrench()
 
 void IntlTestCase::IsAvailable()
 {
-    const wxString origLocale(setlocale(LC_ALL, NULL));
+    const wxString origLocale(setlocale(LC_ALL, nullptr));
 
     // Calling IsAvailable() shouldn't change the locale.
     wxLocale::IsAvailable(wxLANGUAGE_ENGLISH);
 
-    CPPUNIT_ASSERT_EQUAL( origLocale, setlocale(LC_ALL, NULL) );
+    CPPUNIT_ASSERT_EQUAL( origLocale, setlocale(LC_ALL, nullptr) );
 }
 
 TEST_CASE("wxTranslations::AddCatalog", "[translations]")
@@ -251,13 +253,14 @@ TEST_CASE("wxTranslations::AddCatalog", "[translations]")
 
     SECTION("All")
     {
-        wxArrayString available = trans.GetAvailableTranslations(domain);
-        REQUIRE( available.size() == 3 );
+        auto available = trans.GetAvailableTranslations(domain);
+        REQUIRE( available.size() == 4 );
 
         available.Sort();
         CHECK( available[0] == "en_GB" );
         CHECK( available[1] == "fr" );
         CHECK( available[2] == "ja" );
+        CHECK( available[3] == "xart-dothraki" );
     }
 
     SECTION("French")
@@ -326,6 +329,7 @@ TEST_CASE("wxTranslations::GetBestTranslation", "[translations]")
         wxSetEnv("WXLANGUAGE", "en_GB");
         CHECK( trans.GetBestTranslation(domain) == "en_GB" );
         CHECK( trans.GetBestAvailableTranslation(domain) == "en_GB" );
+
     }
 
     SECTION("DontSkipMsgidLanguage")
@@ -339,11 +343,40 @@ TEST_CASE("wxTranslations::GetBestTranslation", "[translations]")
         CHECK( trans.GetBestTranslation(domain) == "fr" );
         CHECK( trans.GetBestAvailableTranslation(domain) == "fr" );
     }
+
+    SECTION("PassthroughUnknown")
+    {
+        // Check that even a language not known to wx (in this case, made up)
+        // will be correctly served if it is known to the OS and has available
+        // translation.
+        //
+        // Notice that this would normally be x-art-dothraki, but we
+        // intentionally use an incorrect code to be future-proof and
+        // explicitly test for unrecognized passthrough even if wx starts fully
+        // understanding language tags.
+        wxSetEnv("WXLANGUAGE", "xart-dothraki:en:fr");
+        CHECK( trans.GetBestTranslation(domain) == "xart-dothraki" );
+    }
 }
 
-// The test may fail in ANSI builds because of unsupported encoding, but we
-// don't really care about this build anyhow, so just skip it there.
-#if wxUSE_UNICODE
+// This test can be used to check how GetBestTranslation() and
+// GetAvailableTranslations() work with the given preferred languages: set
+// WXLANGUAGE environment variable to the colon-separated list of preferred
+// languages to test before running it.
+TEST_CASE("wxTranslations::ShowAvailable", "[.]")
+{
+    wxFileTranslationsLoader::AddCatalogLookupPathPrefix("./intl");
+
+    const wxString domain("internat");
+
+    wxTranslations trans;
+
+    WARN
+    (
+        "Available: [" << wxJoin(trans.GetAvailableTranslations(domain), ',') << "]\n"
+        "Best:      [" << trans.GetBestTranslation(domain) << "]"
+    );
+}
 
 TEST_CASE("wxLocale::Default", "[locale]")
 {
@@ -355,8 +388,6 @@ TEST_CASE("wxLocale::Default", "[locale]")
 
     REQUIRE( loc.Init(langDef, wxLOCALE_DONT_LOAD_DEFAULT) );
 }
-
-#endif // wxUSE_UNICODE
 
 // Under MSW and macOS all the locales used below should be supported, but
 // under Linux some locales may be unavailable.
@@ -434,8 +465,6 @@ TEST_CASE("wxUILocale::CompareStrings", "[uilocale]")
 #endif
     }
 
-    // UTF-8 strings are not supported in ASCII build.
-#if wxUSE_UNICODE
     SECTION("German")
     {
         const wxUILocale l(wxLocaleIdent().Language("de").Region("DE"));
@@ -449,9 +478,9 @@ TEST_CASE("wxUILocale::CompareStrings", "[uilocale]")
         CHECK( l.CompareStrings(u8("ä"), "ae") == -1 );
 
 #if defined(__WINDOWS__) || defined(__WXOSX__)
-        // Unfortunately CompareStringsEx() doesn't seem to work correctly
-        // under Wine.
-        if ( wxIsRunningUnderWine() )
+        // CompareStringsEx() was only implemented correctly in Wine 7.10.
+        wxVersionInfo wineVer;
+        if ( wxIsRunningUnderWine(&wineVer) && !wineVer.AtLeast(7, 10) )
             return;
 
         CHECK( l.CompareStrings(u8("ß"), "ss", wxCompare_CaseInsensitive) == 0 );
@@ -460,7 +489,8 @@ TEST_CASE("wxUILocale::CompareStrings", "[uilocale]")
 
     SECTION("Swedish")
     {
-        if ( wxIsRunningUnderWine() )
+        wxVersionInfo wineVer;
+        if ( wxIsRunningUnderWine(&wineVer) && !wineVer.AtLeast(7, 10) )
             return;
 
         const wxUILocale l(wxUILocale::FromTag("sv"));
@@ -472,7 +502,6 @@ TEST_CASE("wxUILocale::CompareStrings", "[uilocale]")
         CHECK( l.CompareStrings(u8("ä"), "ae") == 1 );
         CHECK( l.CompareStrings(u8("ö"), "z" ) == 1 );
     }
-#endif // wxUSE_UNICODE
 }
 
 // Small helper for making the test below more concise.
@@ -497,6 +526,135 @@ TEST_CASE("wxLocaleIdent::FromTag", "[uilocale][localeident]")
     CheckTag("English_United States.utf8");
 
     CHECK( TagToPOSIX("zh-Hans-CN") == "zh_CN" );
+    CHECK( TagToPOSIX("zh-Hant-TW") == "zh_TW");
+    CHECK( TagToPOSIX("sr-Latn-RS") == "sr_RS@latin");
+    CHECK( TagToPOSIX("sr-Cyrl-RS") == "sr_RS");
+}
+
+static wxString FindBestMatch(const wxVector<wxString>& desired, const wxVector<wxString>& supported)
+{
+    return wxLocaleIdent::GetBestMatch(desired, supported);
+}
+
+TEST_CASE("wxLocaleIdent::GetBestMatch", "[uilocale][localeident]")
+{
+    CHECK(FindBestMatch({ "en-AU" }, { "en-US", "en-NZ" }) == "en-NZ");
+    CHECK(FindBestMatch({ "pt-AO" }, { "pt-BR", "pt-PT" }) == "pt-PT");
+    CHECK(FindBestMatch({ "fr" }, { "fr-FR", "fr", "fr-CA", "en"}) == "fr");
+    CHECK(FindBestMatch({ "fr-FR" }, { "en", "fr", "fr-CA" }) == "fr");
+    CHECK(FindBestMatch({ "fr-FR" }, { "en", "fr-CA" }) == "fr-CA");
+    CHECK(FindBestMatch({ "fr" }, { "fr-CA", "fr-FR"}) == "fr-FR");
+    CHECK(FindBestMatch({ "fr-SN" }, { "fr-CA", "fr-FR" }) == "fr-FR");
+    CHECK(FindBestMatch({ "fr" }, { "de", "en", "it"}) == "");
+
+    // favor a more-default locale among equally imperfect matches
+    CHECK(FindBestMatch({ "fr-SN" }, { "fr-CA", "fr-CH", "fr-FR", "fr-GB"}) == "fr-FR");
+
+    CHECK(FindBestMatch({ "zh-TW" }, { "zh" }) == "");
+    CHECK(FindBestMatch({ "zh-HK" }, { "zh-Hant", "zh-TW" }) == "zh-TW");
+
+    // same language over exact, but distinguish when user is explicit
+    CHECK(FindBestMatch({ "ja", "de"}, {"fr", "en-GB", "ja", "es-ES", "ex-MX"}) == "ja");
+    CHECK(FindBestMatch({ "de-CH", "fr" }, { "en", "de", "fr", "ja" }) == "de");
+    CHECK(FindBestMatch({ "en", "nl" }, { "en-GB", "nl" }) == "en-GB");
+    CHECK(FindBestMatch({ "en", "nl", "en-GB"}, {"en-GB", "nl"}) == "en-GB");
+
+    // pick best maximized match
+    CHECK(FindBestMatch({ "ja-Jpan-JP", "ru" }, { "ja", "ja-Jpan", "ja-JP", "en", "ru"}) == "ja-Jpan");
+    CHECK(FindBestMatch({ "ja-Jpan", "ru" }, { "ja", "ja-Jpan", "ja-JP", "en", "ru" }) == "ja-Jpan");
+
+    // match on maximized tag
+    CHECK(FindBestMatch({ "ja-JP", "en-GB" }, { "fr", "en-GB", "ja", "es-ES", "es-MX" }) == "ja");
+    CHECK(FindBestMatch({ "ja-Jpan-JP", "en-GB" }, { "fr", "en-GB", "ja", "es-ES", "es-MX" }) == "ja");
+
+    // region distance German
+    CHECK(FindBestMatch({ "de" }, { "de-AT", "de-DE", "de-CH" }) == "de-DE");
+
+    // en-AU is closer to en-GB than to en (which is en-US)
+    CHECK(FindBestMatch({ "en-AU" }, { "en", "en-GB", "es-ES" }) == "en-GB");
+
+    // if no preferred locale specified, pick top language, not regional
+    CHECK(FindBestMatch({ "fr-US" }, { "en", "fr", "fr-CA", "fr-CH"}) == "fr");
+
+    // return most originally similar among likely-subtags equivalent locales
+    CHECK(FindBestMatch({ "af" }, { "af", "af-Latn", "af-Arab" }) == "af");
+    CHECK(FindBestMatch({ "af-ZA" }, { "af", "af-Latn", "af-Arab" }) == "af");
+    CHECK(FindBestMatch({ "af-Latn-ZA" }, { "af", "af-Latn", "af-Arab" }) == "af-Latn");
+    CHECK(FindBestMatch({ "af-Latn" }, { "af", "af-Latn", "af-Arab" }) == "af-Latn");
+
+    CHECK(FindBestMatch({ "nl" }, { "nl", "nl-NL", "nl-BE" }) == "nl");
+    CHECK(FindBestMatch({ "nl-Latn" }, { "nl", "nl-NL", "nl-BE" }) == "nl");
+    CHECK(FindBestMatch({ "nl-Latn-NL" }, { "nl", "nl-NL", "nl-BE" }) == "nl-NL");
+    CHECK(FindBestMatch({ "nl-NL" }, { "nl", "nl-NL", "nl-BE" }) == "nl-NL");
+
+    CHECK(FindBestMatch({ "nl" }, { "nl", "nl-Latn", "nl-NL", "nl-BE" }) == "nl");
+    CHECK(FindBestMatch({ "nl-Latn" }, { "nl", "nl-Latn", "nl-NL", "nl-BE" }) == "nl-Latn");
+    CHECK(FindBestMatch({ "nl-NL" }, { "nl", "nl-Latn", "nl-NL", "nl-BE" }) == "nl-NL");
+    CHECK(FindBestMatch({ "nl-Latn-NL" }, { "nl", "nl-Latn", "nl-NL", "nl-BE" }) == "nl-Latn");
+
+    // nearby languages: Danish matches no
+    CHECK(FindBestMatch({ "da" }, { "en", "no" }) == "no");
+    // nearby languages: Nynorsk to Bokmål
+    CHECK(FindBestMatch({ "nn" }, { "en", "nb" }) == "nb");
+    // nearby languages: Danish does not match nn
+    CHECK(FindBestMatch({ "da" }, { "en", "nn" }) == "");
+
+    // script fallbacks
+    CHECK(FindBestMatch({ "zh-Hant" }, { "zh-CN", "zh-TW" }) == "zh-TW");
+    CHECK(FindBestMatch({ "zh" }, { "zh-CN", "zh-TW" }) == "zh-CN");
+    CHECK(FindBestMatch({ "zh-Hans" }, { "zh-CN", "zh-TW" }) == "zh-CN");
+    CHECK(FindBestMatch({ "zh-Hans-CN" }, { "zh-CN", "zh-TW" }) == "zh-CN");
+    CHECK(FindBestMatch({ "zh-Hant-HK" }, { "zh-CN", "zh-TW" }) == "zh-TW");
+    CHECK(FindBestMatch({ "zh-Hans-DE" }, { "zh-CN", "zh-TW" }) == "zh-CN");
+    CHECK(FindBestMatch({ "zh-Hant-DE" }, { "zh-CN", "zh-TW" }) == "zh-TW");
+
+    // language-specific script fallbacks
+    CHECK(FindBestMatch({ "sr" }, { "en", "sr-Latn" }) == "sr-Latn");
+    CHECK(FindBestMatch({ "sr" }, { "en", "sr-Cyrl" }) == "sr-Cyrl");
+    CHECK(FindBestMatch({ "sr" }, { "en", "sr-Latn", "sr-Cyrl"}) == "sr-Cyrl");
+    CHECK(FindBestMatch({ "sr-Latn" }, { "en", "sr-Latn", "sr-Cyrl" }) == "sr-Latn");
+    CHECK(FindBestMatch({ "sr-Cyrl" }, { "en", "sr-Latn" }) == "sr-Latn");
+    CHECK(FindBestMatch({ "sr-Latn" }, { "en", "sr-Cyrl" }) == "sr-Cyrl");
+
+    CHECK(FindBestMatch({ "de", "en-US"}, {"fr", "en-GB", "ja", "es-ES", "es-MX"}) == "en-GB");
+    CHECK(FindBestMatch({ "de", "zh" }, { "fr", "en-GB", "ja", "es-ES", "es-MX" }) == "");
+
+    // match on maximized
+    CHECK(FindBestMatch({ "ja-JP", "en-GB" }, { "fr", "en-GB", "ja", "es-ES", "es-MX" }) == "ja");
+    CHECK(FindBestMatch({ "ja-Jpan-JP", "en-GB" }, { "fr", "en-GB", "ja", "es-ES", "es-MX" }) == "ja");
+    CHECK(FindBestMatch({ "zh", "en" }, { "fr", "zh-Hant", "en" }) == "en");
+
+    // close enough match on maximized
+    CHECK(FindBestMatch({ "de-CH", "fr" }, { "en-GB", "en", "de", "fr", "ja" }) == "de");
+    CHECK(FindBestMatch({ "en-US", "ar", "nl", "de", "ja" }, { "en-GB", "en", "de", "fr", "ja"}) == "en");
+
+    // best matches for Portuguese
+    CHECK(FindBestMatch({ "pt-PT", "es", "pt" }, { "pt-PT", "pt-BR", "es", "es-AR"}) == "pt-PT");
+    CHECK(FindBestMatch({ "pt-PT", "es", "pt" }, { "pt-PT", "pt", "es", "es-AR" }) == "pt-PT");
+    CHECK(FindBestMatch({ "pt-PT", "es", "pt" }, { "pt-BR", "es", "es-AR" }) == "pt-BR");
+
+    CHECK(FindBestMatch({ "pt", "es", "pt-PT" }, { "pt-PT", "pt-BR", "es", "es-AR" }) == "pt-BR");
+    CHECK(FindBestMatch({ "pt", "es", "pt-PT" }, { "pt-PT", "pt", "es", "es-AR" }) == "pt");
+    CHECK(FindBestMatch({ "pt", "es", "pt-PT" }, { "pt-BR", "es", "es-AR" }) == "pt-BR");
+    CHECK(FindBestMatch({ "pt-US", "pt-PT" }, { "pt-PT", "pt-BR", "es", "es-AR" }) == "pt-BR");
+    CHECK(FindBestMatch({ "pt-US", "pt-PT" }, { "pt-PT", "pt", "es", "es-AR" }) == "pt");
+
+    // regional specials
+    CHECK(FindBestMatch({ "en-AU" }, { "en", "en-GB", "es-ES", "es-AR" }) == "en-GB");
+    CHECK(FindBestMatch({ "es-MX" }, { "en", "en-GB", "es-ES", "es-AR" }) == "es-AR");
+    CHECK(FindBestMatch({ "es-PT" }, { "en", "en-GB", "es-ES", "es-AR" }) == "es-ES");
+
+    // best match for traditional chinese
+    CHECK(FindBestMatch({ "zh-TW" }, { "fr", "zh-Hans", "zh-Hans-CN", "en-US" }) == "");
+    CHECK(FindBestMatch({ "zh-Hant" }, { "fr", "zh-Hans", "zh-Hans-CN", "en-US" }) == "");
+
+    CHECK(FindBestMatch({ "zh-TW", "en" }, {"fr", "zh-Hans", "zh-Hans-CN", "en-US"}) == "en-US");
+    CHECK(FindBestMatch({ "zh-Hant-CN", "en" }, {"fr", "zh-Hans", "zh-Hans-CN", "en-US"}) == "en-US");
+    CHECK(FindBestMatch({ "zh-Hans", "en" }, {"fr", "zh-Hans", "zh-Hans-CN", "en-US"}) == "zh-Hans");
+
+    CHECK(FindBestMatch({ "zh-TW", "en" }, { "fr", "zh-Hans", "zh-Hans-CN", "zh-Hant", "en-US" }) == "zh-Hant");
+    CHECK(FindBestMatch({ "zh-Hant-CN", "en" }, { "fr", "zh-Hans", "zh-Hans-CN", "zh-Hant", "en-US" }) == "zh-Hant");
+    CHECK(FindBestMatch({ "zh-Hans", "en" }, { "fr", "zh-Hans", "zh-Hans-CN", "zh-Hant", "en-US" }) == "zh-Hans");
 }
 
 // Yet another helper for the test below.
@@ -525,7 +683,7 @@ static void CheckFindLanguage(const wxString& tag, const char* expected)
 
 TEST_CASE("wxUILocale::FindLanguageInfo", "[uilocale]")
 {
-    CheckFindLanguage("", NULL);
+    CheckFindLanguage("", nullptr);
     CheckFindLanguage("en", "en");
     CheckFindLanguage("en_US", "en_US");
     CheckFindLanguage("en_US.utf8", "en_US");
@@ -564,6 +722,17 @@ TEST_CASE("wxUILocale::FromTag", "[.]")
          "sort order:\t" << locId.GetSortorder() << "\n"
          "supported:\t" << (loc.IsSupported() ? "yes" : "no"));
 }
+
+#ifdef TEST_INVALID_MSGID
+
+// This is not a real test, its compilation should fail.
+TEST_CASE("wxTranslations/msgid", "[.]")
+{
+    wxString s = _(wxString::Format("Hello %s", "world"));
+    CHECK( s == "Hello world" );
+}
+
+#endif // TEST_INVALID_MSGID
 
 namespace
 {
@@ -628,12 +797,12 @@ TEST_CASE("wxUILocale::ShowSystem", "[.]")
     WARN(GetLocaleDesc("After wxUILocale::UseDefault()"));
 
     wxString preferredLangsStr;
-    const wxVector<wxString> preferredLangs = wxUILocale::GetPreferredUILanguages();
-    for (size_t n = 0; n < preferredLangs.size(); ++n)
+    const auto preferredLangs = wxUILocale::GetPreferredUILanguages();
+    for (const auto& lang: preferredLangs)
     {
         if ( !preferredLangsStr.empty() )
             preferredLangsStr += ", ";
-        preferredLangsStr += preferredLangs[n];
+        preferredLangsStr += lang;
     }
     WARN("Preferred UI languages:\n" << preferredLangsStr);
 }

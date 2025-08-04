@@ -35,7 +35,7 @@ jobs:
       - run:
           name: Checkout required submodules
           command: |
-            git submodule update --init 3rdparty/catch 3rdparty/nanosvg
+            git submodule update --init 3rdparty/catch 3rdparty/nanosvg src/stc/scintilla src/stc/lexilla
 
       - restore_cache:
           name: Restore ccache
@@ -50,12 +50,12 @@ jobs:
       - run:
           name: Build libraries
           command: |
-            make -k $wxBUILD_ARGS CXXFLAGS='-Werror -Wno-error=cpp -Wno-deprecated-copy-dtor'
+            make -k $wxBUILD_ARGS CXXFLAGS='-Werror -Wno-error=cpp'
 
       - run:
           name: Build tests
           command: |
-            make -k $wxBUILD_ARGS CXXFLAGS='-Werror -Wno-error=cpp -Wno-deprecated-copy-dtor' -C tests
+            make -k $wxBUILD_ARGS CXXFLAGS='-Werror -Wno-error=cpp' -C tests
 
       - run:
           name: Run tests
